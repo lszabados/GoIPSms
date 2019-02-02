@@ -11,27 +11,31 @@ namespace Voxo.GoIpSmsServer
             return string.Format(@"req:{0};status:{1};", req.ToString(), status.ToString());
         }
 
-        public static string BULK_SMS_REQUEST(int sendid, string content)
+        public static string BULK_SMS_REQUEST(string sendid, string content)
         {
-            // max length !!
-            string cont = content.Substring(0, 3000);
+            string cont = content;
+            if (cont.Length > 3000)
+            {
+                cont = cont.Substring(0, 3000);
+            }
 
-            return  string.Format(@"MSG {0} {1} {2}\n", sendid.ToString(), cont.Length.ToString(), cont);
+
+            return  string.Format(@"MSG {0} {1} {2}", sendid, cont.Length.ToString(), cont);
         }
 
-        public static string AUTHENTICATION_REQUEST(int sendid, string password)
+        public static string AUTHENTICATION_REQUEST(string sendid, string password)
         {
-            return string.Format(@"PASSWORD {0} {1}\n", sendid.ToString(), password);
+            return string.Format(@"PASSWORD {0} {1}\n", sendid, password);
         }
 
-        public static string SUBMIT_NUMBER_REQUEST(int sendid, int telid, string telephoneNumber)
+        public static string SUBMIT_NUMBER_REQUEST(string sendid, int telid, string telephoneNumber)
         {
-            return string.Format(@"SEND {0} {1} {2}", sendid.ToString(), telid.ToString(), telephoneNumber);
+            return string.Format(@"SEND {0} {1} {2}", sendid, telid.ToString(), telephoneNumber);
         }
 
-        public static string END_REQUEST(int sendid)
+        public static string END_REQUEST(string sendid)
         {
-            return string.Format(@"DONE {0}\n", sendid.ToString());
+            return string.Format(@"DONE {0}\n", sendid);
         }
 
         public static string RECEIVE_SMS_ACK(string receiveid, string errorMsg = "")
