@@ -73,6 +73,15 @@ namespace Voxo.GoIpSmsServer
             return ret;
         }
 
+        protected int FindIntValue(string name, string[] data)
+        {
+            int ret = 0;
+
+            FindTryIntValue(name, data, out ret);
+
+            return ret;
+        }
+
     }
 
     

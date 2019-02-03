@@ -16,7 +16,7 @@ namespace Voxo.GoIpSmsServer
         }
 
         public long req { get; protected set; }
-        public string id { get; protected set; }
+        public string authid { get; protected set; }
         public string password { get; set; }
         public string gsm_num { get; protected set; }
         public string gsm_signal { get; protected set; }
@@ -45,7 +45,7 @@ namespace Voxo.GoIpSmsServer
             voip_status = FindStringValue("voip_status", dlist);
             voip_state = FindStringValue("voip_state", dlist);
             req = FindLongValue("req", dlist);
-            id = FindStringValue("id", dlist);
+            authid = FindStringValue("id", dlist);
             password = FindStringValue("pass", dlist);
             gsm_num = FindStringValue("num", dlist);
             iccid = FindStringValue("iccid", dlist);

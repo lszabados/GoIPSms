@@ -15,7 +15,7 @@ namespace Voxo.GoIpSmsServer
         }
 
         public string ReceiveId { get; protected set; }
-        public string Id { get; protected set; }
+        public string AuthId { get; protected set; }
         public string Password { get; set; }
         public string Srcnum { get; protected set; }
         public string Message { get; protected set; }
@@ -26,7 +26,7 @@ namespace Voxo.GoIpSmsServer
             var dlist = data.Split(new char[] { ';' });
 
             ReceiveId = FindStringValue("RECEIVE", dlist);
-            Id = FindStringValue("id", dlist);
+            AuthId = FindStringValue("id", dlist);
             Password = FindStringValue("password", dlist);
             Srcnum = FindStringValue("srcnum", dlist);
             Message = FindStringValue("msg", dlist);

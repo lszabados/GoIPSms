@@ -36,6 +36,10 @@ namespace Voxo.GoIpSmsServer
         public delegate void MessageHandler(object server, GoIPMessageEventArgs messageData);
         public event MessageHandler OnMessage;
 
+        // delivery report event
+        public delegate void DeliveryReportHandler(object server, GoIPDeliveryReportEventArgs messageData);
+        public event DeliveryReportHandler OnDeliveryReport;
+
         public bool ServerStarted { get { return Status == ServerStatus.Started; } }
         public ServerStatus Status { get; internal set; } = ServerStatus.Stopped;
 
@@ -219,10 +223,40 @@ namespace Voxo.GoIpSmsServer
                 extracted = true;
             }
 
+            if (Data.StartsWith("DELIVER:"))
+            {
+                DeliverReport(Data, host, port);
+                extracted = true;
+            }
+
             if (!extracted)
             {
                 _logger.LogInformation("Unknown data, not extracted. Data {0}", Data);
             }
+        }
+
+        private void DeliverReport(string data, string host, int port)
+        {
+            _logger.LogDebug("Start SMS delivery report");
+
+            GoIPSmsDeliveryReportPacket packet = new GoIPSmsDeliveryReportPacket(data);
+
+            // if auth error  
+            if (packet.authid != _options.ServerId || packet.password != _options.AuthPassword)
+            {
+                // TODO: log?
+                _logger.LogInformation("Received SMS delivery report authentication error. Data: {0}", data);
+                Send(ACKPacketFactory.DELIVER_ACK(packet.receiveid.ToString(), "Authentication error!"), host, port);
+                OnDeliveryReport(this, new GoIPDeliveryReportEventArgs("Delivery report authentication error!", packet, host, port));
+                return;
+            }
+
+            packet.password = "";  // Delete password for security reasons
+
+            _logger.LogInformation("Received SMS delivery report OK. ReceiveId: {3} Send number: {0} SMS no: {1}", packet.send_num, packet.sms_no, packet.receiveid);
+
+            Send(ACKPacketFactory.DELIVER_ACK(packet.receiveid.ToString(), ""), host, port);
+            OnDeliveryReport(this, new GoIPDeliveryReportEventArgs("OK", packet, host, port));
         }
 
         private void ReceiveSms(string data, string host, int port)
@@ -232,12 +266,12 @@ namespace Voxo.GoIpSmsServer
             GoIPMessagePacket packet = new GoIPMessagePacket(data);
             
             // if auth error  
-            if (packet.Id != _options.ServerId || packet.Password != _options.AuthPassword)
+            if (packet.AuthId != _options.ServerId || packet.Password != _options.AuthPassword)
             {
                 // TODO: log?
                 _logger.LogInformation("Received SMS data authentication error. Data: {0}", data);
                 Send(ACKPacketFactory.RECEIVE_SMS_ACK(packet.ReceiveId, "Authentication error!"), host, port);
-                OnMessage(this, new GoIPMessageEventArgs("Authentication error!", packet, host, port));
+                OnMessage(this, new GoIPMessageEventArgs("Receive SMS authentication error!", packet, host, port));
                 return;
             }
 
@@ -260,7 +294,7 @@ namespace Voxo.GoIpSmsServer
             GoIPRegistrationPacket packet = new GoIPRegistrationPacket(data);
 
             // if auth error  
-            if (packet.id != _options.ServerId || packet.password != _options.AuthPassword)
+            if (packet.authid != _options.ServerId || packet.password != _options.AuthPassword)
             {
                 // TODO: log?
                 _logger.LogInformation("Received registration data authentication error. Data: {0}", data);
@@ -273,13 +307,13 @@ namespace Voxo.GoIpSmsServer
 
             if (string.IsNullOrEmpty(packet.imei))
             {
-                _logger.LogInformation("Received SMS data without IMEI. packet id: {0}", packet.id);
+                _logger.LogInformation("Received SMS data without IMEI. packet id: {0}", packet.authid);
                 Send(ACKPacketFactory.ACK_MESSAGE(packet.req, 400), host, port);
                 OnRegistration(this, new GoIPRegisterEventArgs("No IMEI! (No SIM?)", packet, host, port, 400));
                 return;
             }
 
-            _logger.LogInformation("Received registration OK. Packet id: {0} IMEI: {1}", packet.id, packet.imei);
+            _logger.LogInformation("Received registration OK. Packet id: {0} IMEI: {1}", packet.authid, packet.imei);
             Send(ACKPacketFactory.ACK_MESSAGE(packet.req, 200), host, port);
             OnRegistration(this, new GoIPRegisterEventArgs("OK", packet, host, port, 400));
         }
