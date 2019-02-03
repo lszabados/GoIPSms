@@ -20,4 +20,4 @@ namespace Voxo.GoIpSmsServer
         public int Port { get; }
     }
 }
-}
+

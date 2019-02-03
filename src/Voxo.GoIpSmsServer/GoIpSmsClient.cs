@@ -16,23 +16,19 @@ namespace Voxo.GoIpSmsServer
         /// <param name="host">Host ip address</param>
         /// <param name="port">port</param>
         /// <param name="line">GSM line</param>
-        public GoIpSmsClient(ILogger<GoIpSmsClient> logger, string host, string password, int port =10991 ,  int line = 0)
+        public GoIpSmsClient(ILogger<GoIpSmsClient> logger)
         {
-            Host = host;
-            Port = port;
-            Line = line;
-            Password = password;
+            Port = 10991;
             _logger = logger;
             GenerateSendId();
-            _logger.LogDebug("Create SMS Client. Host: {0} Port: {1} Line: {2}", Host, Port, Line);
+            _logger.LogDebug("Create SMS Client. ");
         }
 
         private readonly ILogger<GoIpSmsClient> _logger;
 
-        public string Host { get; }
-        public int Port { get; }
-        public int Line { get; }
-        public string Password { get; }
+        public string Host { get; set; }
+        public int Port { get; set; }
+        public string Password { get; set; }
 
         private string SendId { get; set; } = "";
 
@@ -122,13 +118,23 @@ namespace Voxo.GoIpSmsServer
             OnSmsSendEnd(this, new GoIPSmsSendEndEventArgs(SendId));
         }
 
-        private string GetCommand(string command, string logtext)
+        private string GetCommand(string command, string logtext, bool needPassword = true)
         {
             // null Error message
             ErrorMessage = "";
 
             _logger.LogDebug("Start {0} func", logtext);
-            int localPort = Send(ACKPacketFactory.REQUEST(command, SendId, Password));
+            int localPort = 0;
+
+            if (needPassword)
+            {
+                localPort = Send(ACKPacketFactory.REQUEST(command, SendId, Password));
+            }
+            else
+            {
+                localPort = Send(ACKPacketFactory.SEND(command, SendId));
+            }
+            
 
             if (localPort == 0)
             {
@@ -460,24 +466,7 @@ namespace Voxo.GoIpSmsServer
 
         private void DoneRequest()
         {
-            _logger.LogDebug("SMS sending END_REQUEST start. SendId: {0}", SendId);
-            int localPort = Send(ACKPacketFactory.END_REQUEST(SendId));
-
-            // If localport == 0 then sending error
-            if (localPort == 0) return;
-
-            // Get requvest
-            string ret = Get(localPort);
-
-            if (!ret.StartsWith(string.Format("DONE {0}", SendId)))
-            {
-                ErrorMessage = "Unknow DONE error!";
-                _logger.LogWarning("Bulk SMS done error. SendId: {0} Return value: {1}", SendId, ret);
-                OnSmsSendError(this, new GoIPSmsSendErrorEventArgs(ErrorMessage, SendId));
-                return;
-            }
-            _logger.LogDebug("SMS sending END_REQUEST successfully. SendId: {0}", SendId);
-            
+            GetCommand("DONE", "DONE request", false);
         }
 
         private void SubmitNumberRequest(string number, int telid)
@@ -588,8 +577,8 @@ namespace Voxo.GoIpSmsServer
         private int Send(string data)
         {
             _logger.LogDebug("SMS sending Data send starting. SendId: {0}, Host: {1} Remote port {2} Data: {3}", 
-                SendId, Host, Port+Line, data);
-            UdpClient udpClient = new UdpClient(Host, Port+Line);
+                SendId, Host, Port, data);
+            UdpClient udpClient = new UdpClient(Host, Port);
             Byte[] sendBytes = Encoding.UTF8.GetBytes(data);
             int port = 0;
             try

@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using System;
 using System.Threading.Tasks;
 using Voxo.GoIpSmsServer;
 
@@ -8,13 +10,16 @@ namespace GoIPSmsServerConsole.cs
     {
         static void Main(string[] args)
         {
+            var serviceCollection = new ServiceCollection();
+            ConfigureServices(serviceCollection);
+
+            var serviceProvider = serviceCollection.BuildServiceProvider();
+            var logger = serviceProvider.GetService<ILogger<Program>>();
+
             Console.WriteLine("GoIP Sms Server");
             Console.Write("Starting....");
-            GoIPSmsServer server = new GoIPSmsServer(new GoIPSmsServerOptions() {
-                AuthPassword = "malacka",
-                Port = 44444,
-                ServerId = "lacika"
-            });
+
+            GoIPSmsServer server = serviceProvider.GetService<GoIPSmsServer>();
 
             server.OnRegistration += Server_OnRegistration;
             server.OnMessage += Server_OnMessage;
@@ -47,7 +52,9 @@ namespace GoIPSmsServerConsole.cs
 
                     if (key.Key == ConsoleKey.B)
                     {
-                        GoIpSmsClient client = new GoIpSmsClient("192.168.14.252", "malacka");
+                        GoIpSmsClient client = serviceProvider.GetService<GoIpSmsClient>();
+                        client.Host = "192.168.14.252";
+                        client.Password = "malacka";
                         client.OnSmsSendEnd += Client_OnSmsSendEnd;
                         client.OnSmsSendError += Client_OnSmsSendError;
                         client.OnSmsSendMessage += Client_OnSmsSendMessage;
@@ -106,6 +113,19 @@ namespace GoIPSmsServerConsole.cs
         private static void Server_OnRegistration(object server, GoIPRegisterEventArgs registerData)
         {
             Console.WriteLine(DateTime.Now.ToString()+"  Host: "+registerData.Host+", Req:"+registerData.Packet.req+", Message: "+registerData.Message);
+        }
+
+        private static void ConfigureServices(IServiceCollection services)
+        {
+            services
+                .Configure<GoIPSmsServerOptions>(option => {
+                    option.AuthPassword = "malacka";
+                    option.Port = 44444;
+                    option.ServerId = "lacika";
+                })
+                .AddLogging(configure => configure.AddConsole())
+                .AddTransient<GoIPSmsServer>()
+                .AddTransient<GoIpSmsClient>();
         }
     }
 }
