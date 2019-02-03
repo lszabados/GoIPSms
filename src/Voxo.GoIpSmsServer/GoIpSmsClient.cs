@@ -35,7 +35,7 @@ namespace Voxo.GoIpSmsServer
 
         private string SendId { get; set; } = "";
 
-        public string ErrorMessage { get; set; } = "";
+        public string ErrorMessage { get; private set; } = "";
 
         // event handlers
         public delegate void SmsSendError(object server, GoIPSmsSendErrorEventArgs eventArgs);
@@ -120,6 +120,195 @@ namespace Voxo.GoIpSmsServer
             _logger.LogInformation("Bulk SMS sending proceure ended. SendId: {0}", SendId);
             OnSmsSendEnd(this, new GoIPSmsSendEndEventArgs(SendId));
         }
+
+        /// <summary>
+        /// Get GSM number
+        /// </summary>
+        /// <returns></returns>
+        public string GetGsmNumber()
+        {
+            return "";
+        }
+
+        /// <summary>
+        /// Set GSM number
+        /// </summary>
+        /// <returns></returns>
+        public bool SetGsmNumber()
+        {
+            return false;
+        }
+
+        /// <summary>
+        /// Get expiry time of out call of a channel 
+        /// </summary>
+        /// <returns></returns>
+        public string GetExpirityTime()
+        {
+            return "";
+        }
+
+        /// <summary>
+        /// Set expiry time of out call of a channel
+        /// </summary>
+        /// <returns></returns>
+        public bool SetExpirityTime()
+        {
+            return false;
+        }
+
+        /// <summary>
+        /// Get Remain time of out call
+        /// </summary>
+        /// <returns></returns>
+        public string GetRemainTime()
+        {
+            return "";
+        }
+
+        /// <summary>
+        /// Reset remain time of out call to expiry time
+        /// </summary>
+        public bool ResetRemainTime()
+        {
+            return true;
+        }
+
+        /// <summary>
+        /// Get status of channel
+        /// </summary>
+        /// <returns></returns>
+        public string GetChanelStatus()
+        {
+            return "";
+        }
+
+        /// <summary>
+        /// Drop call
+        /// </summary>
+        /// <returns></returns>
+        public bool DropCall()
+        {
+            return false;
+        }
+
+        /// <summary>
+        /// Reboot channel
+        /// </summary>
+        /// <returns></returns>
+        public bool RebootChannel()
+        {
+            return false;
+        }
+
+        /// <summary>
+        /// Reboot GoIP
+        /// </summary>
+        /// <returns></returns>
+        public bool RebootGoIP()
+        {
+            return false;
+        }
+
+        /// <summary>
+        /// Set GSM call forward
+        /// </summary>
+        /// <returns></returns>
+        public bool SetGsmCallForward()
+        {
+            return false;
+        }
+
+        /// <summary>
+        /// Send USSD 
+        /// </summary>
+        /// <returns></returns>
+        public string SendUSSD()
+        {
+            return "";
+        }
+
+        /// <summary>
+        /// Get IMEI
+        /// </summary>
+        /// <returns></returns>
+        public string GetIMEI()
+        {
+            return "";
+        }
+
+        /// <summary>
+        /// Set IMEI
+        /// </summary>
+        /// <returns></returns>
+        public bool SetIMEI()
+        {
+            return false;
+        }
+
+        /// <summary>
+        /// Get out call interval
+        /// </summary>
+        /// <returns></returns>
+        public string GetOutCallIntervall()
+        {
+            return "";
+        }
+
+        /// <summary>
+        /// Set out call interval
+        /// </summary>
+        /// <returns></returns>
+        public bool SetOutCallIntervall()
+        {
+            return false;
+        }
+
+        /// <summary>
+        /// enable/disable this module
+        /// </summary>
+        /// <returns></returns>
+        public bool EnableDisableThisModule()
+        {
+            return false;
+        }
+
+        /// <summary>
+        /// enable/disable all modules
+        /// </summary>
+        /// <returns></returns>
+        public bool EnableDisableAllModule()
+        {
+            return false;
+        }
+
+        /// <summary>
+        /// Set cell
+        /// </summary>
+        /// <returns></returns>
+        public string SetCell()
+        {
+            return "";
+        }
+
+        /// <summary>
+        /// Get cells list
+        /// </summary>
+        /// <returns></returns>
+        public string GetCellList()
+        {
+            return "";
+        }
+
+        /// <summary>
+        /// Get current cell 
+        /// </summary>
+        /// <returns></returns>
+        public string GetCurrentCell()
+        {
+            return "";
+        }
+
 
         private void DoneRequest()
         {

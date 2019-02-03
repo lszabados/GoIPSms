@@ -52,6 +52,10 @@ namespace Voxo.GoIpSmsServer
         public delegate void RemainHandler(object server, GoIPRemainEventArgs messageData);
         public event RemainHandler OnRemain;
 
+        // Cell list event
+        public delegate void CellListHandler(object server, GoIPCellListEvenetArgs messageData);
+        public event CellListHandler OnCellListChanged;
+
         public bool ServerStarted { get { return Status == ServerStatus.Started; } }
         public ServerStatus Status { get; internal set; } = ServerStatus.Stopped;
 
@@ -259,10 +263,38 @@ namespace Voxo.GoIpSmsServer
                 extracted = true;
             }
 
+            if (Data.StartsWith("CELLS:"))
+            {
+                CellList(Data, host, port);
+                extracted = true;
+            }
+
             if (!extracted)
             {
                 _logger.LogInformation("Unknown data, not extracted. Data {0}", Data);
             }
+        }
+
+        private void CellList(string data, string host, int port)
+        {
+            _logger.LogDebug("Start GoIP Cell list event");
+
+            GoIPCellListPacket packet = new GoIPCellListPacket(data);
+
+            // if auth error  
+            if (packet.authid != _options.ServerId || packet.password != _options.AuthPassword)
+            {
+                // TODO: log?
+                _logger.LogInformation("GoIP Cell list event authentication error. Data: {0}", data);
+                Send(ACKPacketFactory.CELLS_ACK(packet.receiveid.ToString(), "Cell list event authentication error!"), host, port);
+                OnCellListChanged(this, new GoIPCellListEvenetArgs("GoIP Cell list event authentication error!", packet.celllist, host, port));
+                return;
+            }
+
+            _logger.LogInformation("Received GoIP Cell list event. ReceiveId: {0} Cell list: {1}", packet.receiveid, packet.celllist);
+
+            Send(ACKPacketFactory.CELLS_ACK(packet.receiveid.ToString(), ""), host, port);
+            OnCellListChanged(this, new GoIPCellListEvenetArgs("OK", packet.celllist, host, port));
         }
 
         private void RemainData(string data, string host, int port)

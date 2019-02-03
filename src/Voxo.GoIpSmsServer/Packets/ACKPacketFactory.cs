@@ -100,5 +100,17 @@ namespace Voxo.GoIpSmsServer
                 return string.Format(@"RECORD {0} ERROR {1}\n", receiveid, errorMsg);
             }
         }
+
+        public static string CELLS_ACK(string receiveid, string errorMsg = "")
+        {
+            if (string.IsNullOrEmpty(errorMsg))
+            {
+                return string.Format(@"CELLS {0} OK\n", receiveid);
+            }
+            else
+            {
+                return string.Format(@"CELLS {0} ERROR {1}\n", receiveid, errorMsg);
+            }
+        }
     }
 }
