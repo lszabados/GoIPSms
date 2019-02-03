@@ -23,6 +23,7 @@ namespace Voxo.GoIpSmsServer
             Line = line;
             Password = password;
             _logger = logger;
+            GenerateSendId();
             _logger.LogDebug("Create SMS Client. Host: {0} Port: {1} Line: {2}", Host, Port, Line);
         }
 
@@ -121,13 +122,51 @@ namespace Voxo.GoIpSmsServer
             OnSmsSendEnd(this, new GoIPSmsSendEndEventArgs(SendId));
         }
 
+        private string GetCommand(string command, string logtext)
+        {
+            // null Error message
+            ErrorMessage = "";
+
+            _logger.LogDebug("Start {0} func", logtext);
+            int localPort = Send(ACKPacketFactory.REQUEST(command, SendId, Password));
+
+            if (localPort == 0)
+            {
+                ErrorMessage = string.Format("{0} sending error!", logtext);
+                return "";
+            }
+
+            // get request
+            string ret = Get(localPort);
+
+            if (!ret.StartsWith(string.Format("{0} {1}", command, SendId)))
+            {
+                ErrorMessage = string.Format("{0} sending error!", logtext);
+                _logger.LogWarning("{0} receive error. SendID: {1} Return value: {2}", logtext, SendId, ret);
+                OnSmsSendError(this, new GoIPSmsSendErrorEventArgs(ErrorMessage, SendId));
+                return "";
+            }
+
+            if (!ret.StartsWith(string.Format("ERROR {0}", SendId)))
+            {
+                ErrorMessage = ret.Substring(string.Format("ERROR {0} ", SendId).Length);
+                _logger.LogWarning("{0} receive error. SendID: {1} Error message: {2}", logtext, SendId, ErrorMessage);
+                OnSmsSendError(this, new GoIPSmsSendErrorEventArgs(ErrorMessage, SendId));
+                return "";
+            }
+
+
+            _logger.LogDebug("End {0} func", logtext);
+            return ret.Substring(string.Format("{0} {1} ", command, SendId).Length);
+        }
+
         /// <summary>
         /// Get GSM number
         /// </summary>
         /// <returns></returns>
         public string GetGsmNumber()
         {
-            return "";
+            return GetCommand("get_gsm_num", "Get GSM number");
         }
 
         /// <summary>
@@ -145,7 +184,7 @@ namespace Voxo.GoIpSmsServer
         /// <returns></returns>
         public string GetExpirityTime()
         {
-            return "";
+            return GetCommand("get_exp_time", "GSM expiry time");
         }
 
         /// <summary>
@@ -163,7 +202,7 @@ namespace Voxo.GoIpSmsServer
         /// <returns></returns>
         public string GetRemainTime()
         {
-            return "";
+            return GetCommand("get_remain_time", "GSM remain time");
         }
 
         /// <summary>
@@ -180,34 +219,34 @@ namespace Voxo.GoIpSmsServer
         /// <returns></returns>
         public string GetChanelStatus()
         {
-            return "";
+            return GetCommand("get_gsm_state", "GSM status of channel");
         }
 
         /// <summary>
         /// Drop call
         /// </summary>
         /// <returns></returns>
-        public bool DropCall()
+        public string DropCall()
         {
-            return false;
+            return GetCommand("svr_drop_call", "Drop call");
         }
 
         /// <summary>
         /// Reboot channel
         /// </summary>
         /// <returns></returns>
-        public bool RebootChannel()
+        public string RebootChannel()
         {
-            return false;
+            return GetCommand("svr_reboot_module", "Reboot channel");
         }
 
         /// <summary>
         /// Reboot GoIP
         /// </summary>
         /// <returns></returns>
-        public bool RebootGoIP()
+        public string RebootGoIP()
         {
-            return false;
+            return GetCommand("svr_reboot_dev", "Reboot GoIP");
         }
 
         /// <summary>
@@ -234,7 +273,7 @@ namespace Voxo.GoIpSmsServer
         /// <returns></returns>
         public string GetIMEI()
         {
-            return "";
+            return GetCommand("get_imei", "Get IMEI");
         }
 
         /// <summary>
@@ -252,7 +291,7 @@ namespace Voxo.GoIpSmsServer
         /// <returns></returns>
         public string GetOutCallIntervall()
         {
-            return "";
+            return GetCommand("get_out_call_interval", "Get out call interval");
         }
 
         /// <summary>
@@ -297,7 +336,7 @@ namespace Voxo.GoIpSmsServer
         /// <returns></returns>
         public string GetCellList()
         {
-            return "";
+            return GetCommand("get_cells_list", "Get cells list");
         }
 
         /// <summary>
@@ -306,7 +345,7 @@ namespace Voxo.GoIpSmsServer
         /// <returns></returns>
         public string GetCurrentCell()
         {
-            return "";
+            return GetCommand("CURCELL", "Get current cell");
         }
 
 
@@ -415,9 +454,6 @@ namespace Voxo.GoIpSmsServer
         private bool BulkSmsRequest(string message)
         {
             _logger.LogDebug("SMS sending BULK_SMS_REQUEST start. SendId: {0}", SendId);
-            // generate new random send Id
-            if (string.IsNullOrEmpty(SendId)) GenerateSendId();
-                
                 
             int localPort = Send(ACKPacketFactory.BULK_SMS_REQUEST(SendId, message));
 

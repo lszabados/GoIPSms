@@ -26,6 +26,21 @@ namespace Voxo.GoIpSmsServer
             return  string.Format(@"MSG {0} {1} {2}", sendid, cont.Length.ToString(), cont);
         }
 
+        public static string REQUEST(string rstring, string sendid, string password)
+        {
+            return string.Format(@"{0} {1} {2}\n", rstring, sendid, password);
+        }
+
+        public static string REQUEST(string rstring, string sendid, string password, string arg0)
+        {
+            return string.Format(@"{0} {1} {2} {3}\n", rstring, sendid, password, arg0);
+        }
+
+        public static string REQUEST(string rstring, string sendid, string password, string arg0, string arg1)
+        {
+            return string.Format(@"{0} {1} {2} {3} {4}\n", rstring, sendid, password, arg0, arg1);
+        }
+
         public static string AUTHENTICATION_REQUEST(string sendid, string password)
         {
             return string.Format(@"PASSWORD {0} {1}\n", sendid, password);
