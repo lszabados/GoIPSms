@@ -9,10 +9,11 @@ namespace Voxo.GoIpSmsServer
 
         public GoIPPacketBase(string data)
         {
-            ExtractData(data);
+            var dlist = data.Split(new char[] { ';' });
+            ExtractData(dlist);
         }
 
-        public virtual void ExtractData(string data)
+        public virtual void ExtractData(string[] dlist)
         {
 
         }
