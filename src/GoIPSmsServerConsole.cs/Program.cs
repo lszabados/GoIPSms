@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using System;
 using System.Threading.Tasks;
 using Voxo.GoIpSmsServer;
@@ -131,7 +132,7 @@ namespace GoIPSmsServerConsole.cs
                     .AddFilter("Microsoft", LogLevel.Debug)
                     .AddFilter("System", LogLevel.Debug)
                 )
-                .AddTransient<GoIPSmsServer>()
+                .AddSingleton<GoIPSmsServer>()
                 .AddTransient<GoIpSmsClient>();
         }
     }

@@ -73,6 +73,13 @@ namespace Voxo.GoIpSmsServer
             _logger.LogDebug("Create GoIPSmsServer. ServerId: {0} Listening port: {1}", _options.ServerId, _options.Port);
         }
 
+        public GoIPSmsServer(GoIPSmsServerOptions options, ILogger<GoIPSmsServer> logger)
+        {
+            _options = options;
+            _logger = logger;
+            _logger.LogDebug("Create GoIPSmsServer. ServerId: {0} Listening port: {1}", _options.ServerId, _options.Port);
+        }
+
         /// <summary>
         /// Start server instance
         /// </summary>
