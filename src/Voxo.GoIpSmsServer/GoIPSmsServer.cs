@@ -44,6 +44,14 @@ namespace Voxo.GoIpSmsServer
         public delegate void StateHandler(object server, GoIPStateEventArgs messageData);
         public event StateHandler OnStateChange;
 
+        // RECORD event
+        public delegate void RecordHandler(object server, GoIPRecordEventArgs messageData);
+        public event RecordHandler OnRecord;
+
+        // REMAIN event
+        public delegate void RemainHandler(object server, GoIPRemainEventArgs messageData);
+        public event RemainHandler OnRemain;
+
         public bool ServerStarted { get { return Status == ServerStatus.Started; } }
         public ServerStatus Status { get; internal set; } = ServerStatus.Stopped;
 
@@ -239,10 +247,70 @@ namespace Voxo.GoIpSmsServer
                 extracted = true;
             }
 
+            if (Data.StartsWith("RECORD:"))
+            {
+                RecordData(Data, host, port);
+                extracted = true;
+            }
+
+            if (Data.StartsWith("REMAIN:"))
+            {
+                RemainData(Data, host, port);
+                extracted = true;
+            }
+
             if (!extracted)
             {
                 _logger.LogInformation("Unknown data, not extracted. Data {0}", Data);
             }
+        }
+
+        private void RemainData(string data, string host, int port)
+        {
+            _logger.LogDebug("Start GoIP Remain event");
+
+            GoIPRemainPacket packet = new GoIPRemainPacket(data);
+
+            // if auth error  
+            if (packet.authid != _options.ServerId || packet.password != _options.AuthPassword)
+            {
+                // TODO: log?
+                _logger.LogInformation("GoIP remain event authentication error. Data: {0}", data);
+                Send(ACKPacketFactory.REMAIN_ACK(packet.receiveid.ToString(), "Remain event authentication error!"), host, port);
+                OnRemain(this, new GoIPRemainEventArgs("GoIP remain event authentication error!", packet, host, port));
+                return;
+            }
+
+            packet.password = "";  // Delete password for security reasons
+
+            _logger.LogInformation("Received GoIP record event. ReceiveId: {0} Remain time: {1}", packet.receiveid, packet.gsm_remain_time);
+
+            Send(ACKPacketFactory.REMAIN_ACK(packet.receiveid.ToString(), ""), host, port);
+            OnRemain(this, new GoIPRemainEventArgs("OK", packet, host, port));
+        }
+
+        private void RecordData(string data, string host, int port)
+        {
+            _logger.LogDebug("Start GoIP Record event");
+
+            GoIPRecordPacket packet = new GoIPRecordPacket(data);
+
+            // if auth error  
+            if (packet.authid != _options.ServerId || packet.password != _options.AuthPassword)
+            {
+                // TODO: log?
+                _logger.LogInformation("GoIP record event authentication error. Data: {0}", data);
+                Send(ACKPacketFactory.RECORD_ACK(packet.receiveid.ToString(), "Record event authentication error!"), host, port);
+                OnRecord(this, new GoIPRecordEventArgs("GoIP record event authentication error!", packet, host, port));
+                return;
+            }
+
+            packet.password = "";  // Delete password for security reasons
+
+            _logger.LogInformation("Received GoIP record event. ReceiveId: {0} Send num: {1} Direction: {2}", packet.receiveid, packet.send_num, packet.direction);
+
+            Send(ACKPacketFactory.RECORD_ACK(packet.receiveid.ToString(), ""), host, port);
+            OnRecord(this, new GoIPRecordEventArgs("OK", packet, host, port));
         }
 
         private void State(string data, string host, int port)
@@ -263,7 +331,7 @@ namespace Voxo.GoIpSmsServer
 
             packet.password = "";  // Delete password for security reasons
 
-            _logger.LogInformation("Received GoIP state. ReceiveId: {0} : {1}", packet.receiveid, packet.gsm_remain_state );
+            _logger.LogInformation("Received GoIP state. ReceiveId: {0} : Gsm state: {1}", packet.receiveid, packet.gsm_remain_state );
 
             Send(ACKPacketFactory.STATE_ACK(packet.receiveid.ToString(), ""), host, port);
             OnStateChange(this, new GoIPStateEventArgs("OK", packet, host, port));

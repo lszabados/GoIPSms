@@ -76,5 +76,29 @@ namespace Voxo.GoIpSmsServer
                 return string.Format(@"STATE {0} ERROR {1}\n", receiveid, errorMsg);
             }
         }
+
+        public static string REMAIN_ACK(string receiveid, string errorMsg = "")
+        {
+            if (string.IsNullOrEmpty(errorMsg))
+            {
+                return string.Format(@"REMAIN {0} OK\n", receiveid);
+            }
+            else
+            {
+                return string.Format(@"REMAIN {0} ERROR {1}\n", receiveid, errorMsg);
+            }
+        }
+
+        public static string RECORD_ACK(string receiveid, string errorMsg = "")
+        {
+            if (string.IsNullOrEmpty(errorMsg))
+            {
+                return string.Format(@"RECORD {0} OK\n", receiveid);
+            }
+            else
+            {
+                return string.Format(@"RECORD {0} ERROR {1}\n", receiveid, errorMsg);
+            }
+        }
     }
 }
