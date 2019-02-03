@@ -41,75 +41,15 @@ namespace Voxo.GoIpSmsServer
             return string.Format(@"DONE {0}\n", sendid);
         }
 
-        public static string RECEIVE_SMS_ACK(string receiveid, string errorMsg = "")
+        public static string ACK(string CODE, string receiveid, string errorMsg = "")
         {
             if (string.IsNullOrEmpty(errorMsg))
             {
-                return string.Format(@"RECEIVE {0} OK\n", receiveid);
+                return string.Format(@"{1} {0} OK\n", receiveid, CODE);
             }
             else
             {
-                return string.Format(@"RECEIVE {0} ERROR {1}\n", receiveid, errorMsg);
-            }
-        }
-
-        public static string DELIVER_ACK(string receiveid, string errorMsg = "")
-        {
-            if (string.IsNullOrEmpty(errorMsg))
-            {
-                return string.Format(@"DELIVER {0} OK\n", receiveid);
-            }
-            else
-            {
-                return string.Format(@"DELIVER {0} ERROR {1}\n", receiveid, errorMsg);
-            }
-        }
-
-        public static string STATE_ACK(string receiveid, string errorMsg = "")
-        {
-            if (string.IsNullOrEmpty(errorMsg))
-            {
-                return string.Format(@"STATE {0} OK\n", receiveid);
-            }
-            else
-            {
-                return string.Format(@"STATE {0} ERROR {1}\n", receiveid, errorMsg);
-            }
-        }
-
-        public static string REMAIN_ACK(string receiveid, string errorMsg = "")
-        {
-            if (string.IsNullOrEmpty(errorMsg))
-            {
-                return string.Format(@"REMAIN {0} OK\n", receiveid);
-            }
-            else
-            {
-                return string.Format(@"REMAIN {0} ERROR {1}\n", receiveid, errorMsg);
-            }
-        }
-
-        public static string RECORD_ACK(string receiveid, string errorMsg = "")
-        {
-            if (string.IsNullOrEmpty(errorMsg))
-            {
-                return string.Format(@"RECORD {0} OK\n", receiveid);
-            }
-            else
-            {
-                return string.Format(@"RECORD {0} ERROR {1}\n", receiveid, errorMsg);
-            }
-        }
-
-        public static string CELLS_ACK(string receiveid, string errorMsg = "")
-        {
-            if (string.IsNullOrEmpty(errorMsg))
-            {
-                return string.Format(@"CELLS {0} OK\n", receiveid);
-            }
-            else
-            {
-                return string.Format(@"CELLS {0} ERROR {1}\n", receiveid, errorMsg);
+                return string.Format(@"{2} {0} ERROR {1}\n", receiveid, errorMsg, CODE);
             }
         }
     }
