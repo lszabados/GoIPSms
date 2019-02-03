@@ -125,6 +125,11 @@ namespace Voxo.GoIpSmsServer
         {
             _logger.LogDebug("SMS sending END_REQUEST start. SendId: {0}", SendId);
             int localPort = Send(ACKPacketFactory.END_REQUEST(SendId));
+
+            // If localport == 0 then sending error
+            if (localPort == 0) return;
+
+            // Get requvest
             string ret = Get(localPort);
 
             if (!ret.StartsWith(string.Format("DONE {0}", SendId)))
@@ -145,7 +150,11 @@ namespace Voxo.GoIpSmsServer
             while (true)
             {
                 int localPort = Send(ACKPacketFactory.SUBMIT_NUMBER_REQUEST(SendId, telid, number));
+                
+                // If localport == 0 then sending error
+                if (localPort == 0) return;
 
+                // Get requvest
                 string ret = Get(localPort);
 
                 if (ret.StartsWith(string.Format("OK {0} {1}", SendId, telid)))
@@ -186,6 +195,11 @@ namespace Voxo.GoIpSmsServer
             _logger.LogDebug("SMS sending AUTHENTICATION_REQUEST start. SendId: {0}", SendId);
 
             int localPort = Send(ACKPacketFactory.AUTHENTICATION_REQUEST(SendId, Password));
+
+            // If localport == 0 then sending error
+            if (localPort == 0) return false;
+
+            // Get requvest
             string ret = Get(localPort);
 
             // if request error message
@@ -217,6 +231,11 @@ namespace Voxo.GoIpSmsServer
                 
                 
             int localPort = Send(ACKPacketFactory.BULK_SMS_REQUEST(SendId, message));
+
+            // If localport == 0 then sending error
+            if (localPort == 0) return false;
+
+            // get request
             string ret = Get(localPort);
 
             if (!ret.StartsWith(string.Format("PASSWORD {0}", SendId)))
@@ -253,8 +272,15 @@ namespace Voxo.GoIpSmsServer
                 udpClient.Close();
             }
 
+            if (port == 0)
+            {
+                ErrorMessage = "Data sending error!";
+                _logger.LogWarning("Bulk SMS data send error. SendId: {0}", SendId);
+                OnSmsSendError(this, new GoIPSmsSendErrorEventArgs(ErrorMessage, SendId));
+            }
+
+
             _logger.LogDebug("SMS sending Data send Ended. Local port: {0}", port);
-                
             return port;
         }
 
