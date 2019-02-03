@@ -139,6 +139,14 @@ namespace Voxo.GoIpSmsServer
             // get request
             string ret = Get(localPort);
 
+            if (ret.StartsWith(string.Format("ERROR {0}", SendId)))
+            {
+                ErrorMessage = ret.Substring(string.Format("ERROR {0} ", SendId).Length);
+                _logger.LogWarning("{0} receive error. SendID: {1} Error message: {2}", logtext, SendId, ErrorMessage);
+                OnSmsSendError(this, new GoIPSmsSendErrorEventArgs(ErrorMessage, SendId));
+                return "";
+            }
+
             if (!ret.StartsWith(string.Format("{0} {1}", command, SendId)))
             {
                 ErrorMessage = string.Format("{0} sending error!", logtext);
@@ -147,7 +155,29 @@ namespace Voxo.GoIpSmsServer
                 return "";
             }
 
-            if (!ret.StartsWith(string.Format("ERROR {0}", SendId)))
+
+            _logger.LogDebug("End {0} func", logtext);
+            return ret.Substring(string.Format("{0} {1} ", command, SendId).Length);
+        }
+
+        public string SetCommand(string command, string param, string logtext)
+        {
+            // null Error message
+            ErrorMessage = "";
+
+            _logger.LogDebug("Start {0} func", logtext);
+            int localPort = Send(ACKPacketFactory.REQUEST(command, SendId, param));
+
+            if (localPort == 0)
+            {
+                ErrorMessage = string.Format("{0} sending error!", logtext);
+                return "";
+            }
+
+            // get request
+            string ret = Get(localPort);
+
+            if (ret.StartsWith(string.Format("ERROR {0}", SendId)))
             {
                 ErrorMessage = ret.Substring(string.Format("ERROR {0} ", SendId).Length);
                 _logger.LogWarning("{0} receive error. SendID: {1} Error message: {2}", logtext, SendId, ErrorMessage);
@@ -155,6 +185,13 @@ namespace Voxo.GoIpSmsServer
                 return "";
             }
 
+            if (!ret.StartsWith(string.Format("{0} {1}", command, SendId)))
+            {
+                ErrorMessage = string.Format("{0} sending error!", logtext);
+                _logger.LogWarning("{0} receive error. SendID: {1} Return value: {2}", logtext, SendId, ret);
+                OnSmsSendError(this, new GoIPSmsSendErrorEventArgs(ErrorMessage, SendId));
+                return "";
+            }
 
             _logger.LogDebug("End {0} func", logtext);
             return ret.Substring(string.Format("{0} {1} ", command, SendId).Length);
@@ -173,9 +210,12 @@ namespace Voxo.GoIpSmsServer
         /// Set GSM number
         /// </summary>
         /// <returns></returns>
-        public bool SetGsmNumber()
+        public string SetGsmNumber(string gsmnumber)
         {
-            return false;
+            string s = SetCommand("set_gsm_num", string.Format("{0} {1}", gsmnumber, Password) , "Set GSM number");
+            if (string.IsNullOrEmpty(s)) return s;
+
+            return "ok";
         }
 
         /// <summary>
@@ -190,11 +230,15 @@ namespace Voxo.GoIpSmsServer
         /// <summary>
         /// Set expiry time of out call of a channel
         /// </summary>
-        /// <returns></returns>
-        public bool SetExpirityTime()
+        /// <param name="expiritiTime">expiry time (minute) witch want to set</param>
+        /// <returns>OK or "" if error. Error message</returns>
+        public string SetExpirityTime(int expiritiTime)
         {
-            return false;
-        }
+            string s = SetCommand("set_gsm_num", string.Format("{0} {1}", expiritiTime, Password), "Set GSM number");
+            if (string.IsNullOrEmpty(s)) return s;
+
+            return "ok";
+         }
 
         /// <summary>
         /// Get Remain time of out call
@@ -208,9 +252,12 @@ namespace Voxo.GoIpSmsServer
         /// <summary>
         /// Reset remain time of out call to expiry time
         /// </summary>
-        public bool ResetRemainTime()
+        public string ResetRemainTime()
         {
-            return true;
+            string s = SetCommand("reset_remain_time", string.Format("{0}", Password), "Reset remain time");
+            if (string.IsNullOrEmpty(s)) return s;
+
+            return "ok";
         }
 
         /// <summary>
@@ -252,10 +299,52 @@ namespace Voxo.GoIpSmsServer
         /// <summary>
         /// Set GSM call forward
         /// </summary>
+        /// <param name="ftime">timeout (second) of noreply forward type. Other types set to 0.</param>
+        /// <param name="mode">enable or disable forward。3:enable，4:disable</param>
+        /// <param name="num">forward to this number</param>
+        /// <param name="reason">type of call forward. 0: unconditional，1: busy，2: noreply，3: noreachable, 4: all，5:busy,noreply,noreachable</param>
         /// <returns></returns>
-        public bool SetGsmCallForward()
+        public bool SetGsmCallForward(string reason, string mode, string num, int ftime)
         {
-            return false;
+            string s = SetCommand("CF", string.Format("{0} {1} {2} {3} {4}", Password, reason, mode, num, ftime.ToString()), "Set GSM call forward");
+            if (string.IsNullOrEmpty(s)) return false;
+
+            // null Error message
+            ErrorMessage = "";
+
+            _logger.LogDebug("Start {0} func", "Set GSM call forward");
+
+            int localPort = Send(ACKPacketFactory.REQUEST("CF", SendId, Password, reason, mode, num, ftime.ToString()));
+
+            if (localPort == 0)
+            {
+                ErrorMessage = string.Format("{0} sending error!", "Set GSM call forward");
+                return false;
+            }
+
+            // get request
+            string ret = Get(localPort);
+
+            if (ret.StartsWith(string.Format("CFERROR {0}", SendId)))
+            {
+                ErrorMessage = ret.Substring(string.Format("ERROR {0} ", SendId).Length);
+                _logger.LogWarning("{0} receive error. SendID: {1} Error message: {2}", "Set GSM call forward", SendId, ErrorMessage);
+                OnSmsSendError(this, new GoIPSmsSendErrorEventArgs(ErrorMessage, SendId));
+                return false;
+            }
+
+            if (!ret.StartsWith(string.Format("{0} {1}", "CFOK", SendId)))
+            {
+                ErrorMessage = string.Format("{0} sending error!", "Set GSM call forward");
+                _logger.LogWarning("{0} receive error. SendID: {1} Return value: {2}", "Set GSM call forward", SendId, ret);
+                OnSmsSendError(this, new GoIPSmsSendErrorEventArgs(ErrorMessage, SendId));
+                return false;
+            }
+
+            Send(ACKPacketFactory.SEND("DONE", SendId));
+
+            _logger.LogDebug("End {0} func", "Set GSM call forward");
+            return true;
         }
 
         /// <summary>
@@ -279,10 +368,14 @@ namespace Voxo.GoIpSmsServer
         /// <summary>
         /// Set IMEI
         /// </summary>
+        /// <param name="imei">IMEI number，15 digits</param>
         /// <returns></returns>
-        public bool SetIMEI()
+        public string SetIMEI(string imei)
         {
-            return false;
+            string s = SetCommand("set_imei", string.Format("{0} {1}", imei, Password), "Set IMEI");
+            if (string.IsNullOrEmpty(s)) return s;
+
+            return "ok";
         }
 
         /// <summary>
@@ -297,37 +390,53 @@ namespace Voxo.GoIpSmsServer
         /// <summary>
         /// Set out call interval
         /// </summary>
+        /// <param name="interval">out call interval (second)</param>
         /// <returns></returns>
-        public bool SetOutCallIntervall()
+        public string SetOutCallIntervall(int interval)
         {
-            return false;
+            string s = SetCommand("set_out_call_interval", string.Format("{0} {1}", interval.ToString(), Password), "Set out call interval");
+            if (string.IsNullOrEmpty(s)) return s;
+
+            return "ok";
         }
 
         /// <summary>
         /// enable/disable this module
         /// </summary>
+        /// <param name="Enable">1 to enable, 2 to disable</param>
         /// <returns></returns>
-        public bool EnableDisableThisModule()
+        public string EnableDisableThisModule(int value)
         {
-            return false;
+            string s = SetCommand("module_ctl_i", string.Format("{0} {1}", value.ToString(), Password), "enable/disable this module");
+            if (string.IsNullOrEmpty(s)) return s;
+
+            return "ok";
         }
 
         /// <summary>
         /// enable/disable all modules
         /// </summary>
+        /// <param name="Enable">1 to enable, 0 to disable, 2 to not change, each digit for each channel. For example 10120121, means channel 1 enable, channel 2 disable, channel 3 enable, channel 4 not change, channel 5 disable, channel 6 enable, channel 7 not change and channel 8 enable</param>
         /// <returns></returns>
-        public bool EnableDisableAllModule()
+        public string EnableDisableAllModule(int value)
         {
-            return false;
+            string s = SetCommand("module_ctl", string.Format("{0} {1}", value.ToString(), Password), "enable/disable this module");
+            if (string.IsNullOrEmpty(s)) return s;
+
+            return "ok";
         }
 
         /// <summary>
         /// Set cell
         /// </summary>
+        /// <param name="cellid">cell id</param>
         /// <returns></returns>
-        public string SetCell()
+        public string SetCell(string cellid)
         {
-            return "";
+            string s = SetCommand("set_base_cell", string.Format("{0} {1}",cellid, Password), "Set cell");
+            if (string.IsNullOrEmpty(s)) return s;
+
+            return "ok";
         }
 
         /// <summary>
