@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
@@ -15,30 +16,50 @@ namespace Voxo.GoIpSmsServer
         /// <param name="host">Host ip address</param>
         /// <param name="port">port</param>
         /// <param name="line">GSM line</param>
-        public GoIpSmsClient(string host, string password, int port =10991 , int line = 0)
+        public GoIpSmsClient(ILogger<GoIpSmsClient> logger, string host, string password, int port =10991 ,  int line = 0)
         {
             Host = host;
             Port = port;
             Line = line;
             Password = password;
+            _logger = logger;
+            _logger.LogDebug("Create SMS Client. Host: {0} Port: {1} Line: {2}", Host, Port, Line);
         }
 
-        public delegate void SmsSendError(object server, GoIPSmsSendErrorEventArgs eventArgs);
-        public event SmsSendError OnSmsSendError;
-
-        public delegate void SmsSendMessageStatus(object server, GoIPSendMessageEventArgs eventArgs);
-        public event SmsSendMessageStatus OnSmsSendMessage;
-
-        public delegate void SmsSendEnd(object server, GoIPSmsSendEndEventArgs eventArgs);
-        public event SmsSendEnd OnSmsSendEnd;
+        private readonly ILogger<GoIpSmsClient> _logger;
 
         public string Host { get; }
         public int Port { get; }
         public int Line { get; }
         public string Password { get; }
+
         private string SendId { get; set; } = "";
 
         public string ErrorMessage { get; set; } = "";
+
+        // event handlers
+        public delegate void SmsSendError(object server, GoIPSmsSendErrorEventArgs eventArgs);
+
+        /// <summary>
+        /// Raise for all SMS sending errors
+        /// </summary>
+        public event SmsSendError OnSmsSendError;
+
+        public delegate void SmsSendMessageStatus(object server, GoIPSendMessageEventArgs eventArgs);
+
+        /// <summary>
+        /// Raise for every SMS sending event
+        /// </summary>
+        public event SmsSendMessageStatus OnSmsSendMessage;
+
+        public delegate void SmsSendEnd(object server, GoIPSmsSendEndEventArgs eventArgs);
+
+        /// <summary>
+        /// Raise for nd of SMS sending process
+        /// </summary>
+        public event SmsSendEnd OnSmsSendEnd;
+
+
 
         /// <summary>
         /// Generate random sendid
@@ -47,6 +68,7 @@ namespace Voxo.GoIpSmsServer
         {
             Random rnd = new Random();
             SendId = rnd.Next(1000, 9999).ToString();
+            _logger.LogInformation("Create random SendId. Value: {0}", SendId);
             return SendId;
         }
 
@@ -58,19 +80,19 @@ namespace Voxo.GoIpSmsServer
         /// <param name="sendId">send identifier</param>
         public void SendBulkSMS(string message, string[] Numbers, string sendId = "")
         {
+            _logger.LogInformation("Bulk SMS sending start. SendId: {0} Message: {1}", SendId, message);
             if (!string.IsNullOrEmpty(sendId)) SendId = sendId;    
 
             if (!BulkSmsRequest(message))
             {
-                OnSmsSendError(this, new GoIPSmsSendErrorEventArgs(ErrorMessage, SendId));
+                _logger.LogInformation("Bulk SMS sending proceure ended. SendId: {0}", SendId);
                 OnSmsSendEnd(this, new GoIPSmsSendEndEventArgs(SendId));
                 return;
             }
 
-
             if (!AuthenticationRequest())
             {
-                OnSmsSendError(this, new GoIPSmsSendErrorEventArgs(ErrorMessage, SendId));
+                _logger.LogInformation("Bulk SMS sending proceure ended. SendId: {0}", SendId);
                 OnSmsSendEnd(this, new GoIPSmsSendEndEventArgs(SendId));
                 return;
             }
@@ -80,40 +102,46 @@ namespace Voxo.GoIpSmsServer
             foreach (string number in Numbers)
             {
                 telid++;
-
-                // if error, then exit
-                if (!SubmitNumberRequest(number, telid))
+             
+                try
                 {
-                    OnSmsSendError(this, new GoIPSmsSendErrorEventArgs(ErrorMessage, SendId));
-                    break;
+                    SubmitNumberRequest(number, telid);
                 }
+                catch (Exception e)
+                {
+                    // if unknown error
+                    _logger.LogWarning("Bulk SMS sending error. TelId: {1} SendId: {2} Message: {0}", e.Message, telid, SendId);
+                    OnSmsSendError(this, new GoIPSmsSendErrorEventArgs(e.Message, SendId));
+                } 
             }
 
-            if (!DoneRequest())
-            {
-                OnSmsSendError(this, new GoIPSmsSendErrorEventArgs(ErrorMessage, SendId));
-            }
+            DoneRequest();
 
+            _logger.LogInformation("Bulk SMS sending proceure ended. SendId: {0}", SendId);
             OnSmsSendEnd(this, new GoIPSmsSendEndEventArgs(SendId));
         }
 
-        private bool DoneRequest()
+        private void DoneRequest()
         {
+            _logger.LogDebug("SMS sending END_REQUEST start. SendId: {0}", SendId);
             int localPort = Send(ACKPacketFactory.END_REQUEST(SendId));
             string ret = Get(localPort);
 
             if (!ret.StartsWith(string.Format("DONE {0}", SendId)))
             {
                 ErrorMessage = "Unknow DONE error!";
-                return false;
+                _logger.LogWarning("Bulk SMS done error. SendId: {0} Return value: {1}", SendId, ret);
+                OnSmsSendError(this, new GoIPSmsSendErrorEventArgs(ErrorMessage, SendId));
+                return;
             }
-
-            return true;
+            _logger.LogDebug("SMS sending END_REQUEST successfully. SendId: {0}", SendId);
+            
         }
 
-        private bool SubmitNumberRequest(string number, int telid)
+        private void SubmitNumberRequest(string number, int telid)
         {
-            
+            _logger.LogDebug("SMS sending SUBMIT_NUMBER_REQUEST start. SendId: {0} TeliId: {1} Phone number: {2}",
+                        SendId, telid, number);
             while (true)
             {
                 int localPort = Send(ACKPacketFactory.SUBMIT_NUMBER_REQUEST(SendId, telid, number));
@@ -122,30 +150,41 @@ namespace Voxo.GoIpSmsServer
 
                 if (ret.StartsWith(string.Format("OK {0} {1}", SendId, telid)))
                 {
+                    _logger.LogInformation("SMS sending SUBMIT_NUMBER_REQUEST successfully. SendId: {0} TeliId: {1} Phone number: {2}", SendId, telid, number);
                     OnSmsSendMessage(this, new GoIPSendMessageEventArgs(number, SendId, "OK"));
                     break;
                 }
 
                 if (ret.StartsWith(string.Format("ERROR {0} {1}", SendId, telid)))
                 {
+                    _logger.LogWarning("SMS sending SUBMIT_NUMBER_REQUEST error. SendId: {0} TeliId: {1} Phone number: {2}", SendId, telid, number);
                     OnSmsSendMessage(this, new GoIPSendMessageEventArgs(number, SendId, "ERROR"));
                     break;
                 }
 
                 if (ret.StartsWith(string.Format("WAIT {0} {1}", SendId, telid)))
                 {
+                    _logger.LogInformation("SMS sending SUBMIT_NUMBER_REQUEST WAIT. SendId: {0} TeliId: {1} Phone number: {2}", SendId, telid, number);
                     OnSmsSendMessage(this, new GoIPSendMessageEventArgs(number, SendId, "WAIT"));
+                }
+                else
+                {
+                    _logger.LogDebug("SMS sending SUBMIT_NUMBER_REQUEST illegal operation. SendId: {0} TeliId: {1} Phone number: {2} Return value: {3}", 
+                         SendId, telid, number, ret);
                 }
 
                 // Wait 3 second
                 System.Threading.Thread.Sleep(3000);
             }
 
-            return true;
+            _logger.LogDebug("SMS sending SUBMIT_NUMBER_REQUEST successfully.  SendId: {0} TeliId: {1} Phone number: {2}", SendId, telid, number);
+            return;
         }
 
         private bool AuthenticationRequest()
         {
+            _logger.LogDebug("SMS sending AUTHENTICATION_REQUEST start. SendId: {0}", SendId);
+
             int localPort = Send(ACKPacketFactory.AUTHENTICATION_REQUEST(SendId, Password));
             string ret = Get(localPort);
 
@@ -153,6 +192,7 @@ namespace Voxo.GoIpSmsServer
             if (ret.StartsWith(string.Format("ERROR {0}", SendId)))
             {
                 ErrorMessage = "Authentication error!";
+                _logger.LogWarning("SMS sending AUTHENTICATION_REQUEST error. SendId: {0} Return value: {1}", SendId, ret);
                 return false;
             }
 
@@ -160,14 +200,18 @@ namespace Voxo.GoIpSmsServer
             if (!ret.StartsWith(string.Format("SEND {0}", SendId)))
             {
                 ErrorMessage = "Unknow Authentication error!";
+                _logger.LogWarning("SMS sending AUTHENTICATION_REQUEST error. SendId: {0} Return value: {1}", SendId, ret);
                 return false;
             }
+
+            _logger.LogDebug("SMS sending AUTHENTICATION_REQUEST sucessfully. SendId: {0}", SendId);
 
             return true;
         }
 
         private bool BulkSmsRequest(string message)
         {
+            _logger.LogDebug("SMS sending BULK_SMS_REQUEST start. SendId: {0}", SendId);
             // generate new random send Id
             if (string.IsNullOrEmpty(SendId)) GenerateSendId();
                 
@@ -177,17 +221,21 @@ namespace Voxo.GoIpSmsServer
 
             if (!ret.StartsWith(string.Format("PASSWORD {0}", SendId)))
             {
-                // ERROR LOG!
-                ErrorMessage = "Request error!";
+                ErrorMessage = "BULK_SMS_REQUEST error!";
+                _logger.LogWarning("Bulk SMS BULK_SMS_REQUEST error. SendID: {0} Return value: {1}", SendId, ret);
+                OnSmsSendError(this, new GoIPSmsSendErrorEventArgs(ErrorMessage, SendId));
                 return false;
             }
 
+            _logger.LogDebug("SMS sending BULK_SMS_REQUEST successfully. SendId: {0}", SendId);
             return true;
 
         }
 
         private int Send(string data)
         {
+            _logger.LogDebug("SMS sending Data send starting. SendId: {0}, Host: {1} Remote port {2} Data: {3}", 
+                SendId, Host, Port+Line, data);
             UdpClient udpClient = new UdpClient(Host, Port+Line);
             Byte[] sendBytes = Encoding.UTF8.GetBytes(data);
             int port = 0;
@@ -198,19 +246,21 @@ namespace Voxo.GoIpSmsServer
             }
             catch (Exception e)
             {
-                // TODO : log?
-                //return 0;
+                _logger.LogWarning("SMS sending Data send error. Exception: {0}", e.Message);
             }
             finally
             {
                 udpClient.Close();
             }
 
+            _logger.LogDebug("SMS sending Data send Ended. Local port: {0}", port);
+                
             return port;
         }
 
         private string Get(int localPort, int max = 8)
         {
+            _logger.LogDebug("SMS sending Data receive starting. Local port: {0} Remote Port {1}", localPort.ToString(), Port.ToString());
             UdpClient listener = new UdpClient(localPort);
             IPEndPoint groupEP = new IPEndPoint(IPAddress.Any, Port);
             string ret = "";
@@ -222,13 +272,13 @@ namespace Voxo.GoIpSmsServer
             }
             catch (SocketException e)
             {
-                // TODO: log?
+                _logger.LogWarning("SMS sending Data send error. Exception: {0}", e.Message);
             }
             finally
             {
                 listener.Close();
             }
-
+            _logger.LogDebug("SMS sending Data receive ended. Data: {0}", ret);
             return ret;
         }
     }
