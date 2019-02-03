@@ -64,5 +64,17 @@ namespace Voxo.GoIpSmsServer
                 return string.Format(@"DELIVER {0} ERROR {1}\n", receiveid, errorMsg);
             }
         }
+
+        public static string STATE_ACK(string receiveid, string errorMsg = "")
+        {
+            if (string.IsNullOrEmpty(errorMsg))
+            {
+                return string.Format(@"STATE {0} OK\n", receiveid);
+            }
+            else
+            {
+                return string.Format(@"STATE {0} ERROR {1}\n", receiveid, errorMsg);
+            }
+        }
     }
 }

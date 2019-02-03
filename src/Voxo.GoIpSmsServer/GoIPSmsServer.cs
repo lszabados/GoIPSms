@@ -40,6 +40,10 @@ namespace Voxo.GoIpSmsServer
         public delegate void DeliveryReportHandler(object server, GoIPDeliveryReportEventArgs messageData);
         public event DeliveryReportHandler OnDeliveryReport;
 
+        // STATE event
+        public delegate void StateHandler(object server, GoIPStateEventArgs messageData);
+        public event StateHandler OnStateChange;
+
         public bool ServerStarted { get { return Status == ServerStatus.Started; } }
         public ServerStatus Status { get; internal set; } = ServerStatus.Stopped;
 
@@ -229,10 +233,40 @@ namespace Voxo.GoIpSmsServer
                 extracted = true;
             }
 
+            if (Data.StartsWith("STATE:"))
+            {
+                State(Data, host, port);
+                extracted = true;
+            }
+
             if (!extracted)
             {
                 _logger.LogInformation("Unknown data, not extracted. Data {0}", Data);
             }
+        }
+
+        private void State(string data, string host, int port)
+        {
+            _logger.LogDebug("Start GoIP State");
+
+            GoIPStatePacket packet = new GoIPStatePacket(data);
+
+            // if auth error  
+            if (packet.authid != _options.ServerId || packet.password != _options.AuthPassword)
+            {
+                // TODO: log?
+                _logger.LogInformation("GoIP state report authentication error. Data: {0}", data);
+                Send(ACKPacketFactory.STATE_ACK(packet.receiveid.ToString(), "State authentication error!"), host, port);
+                OnStateChange(this, new GoIPStateEventArgs("GoIP state authentication error!", packet, host, port));
+                return;
+            }
+
+            packet.password = "";  // Delete password for security reasons
+
+            _logger.LogInformation("Received GoIP state. ReceiveId: {0} : {1}", packet.receiveid, packet.gsm_remain_state );
+
+            Send(ACKPacketFactory.STATE_ACK(packet.receiveid.ToString(), ""), host, port);
+            OnStateChange(this, new GoIPStateEventArgs("OK", packet, host, port));
         }
 
         private void DeliverReport(string data, string host, int port)
