@@ -35,11 +35,8 @@ namespace Voxo.GoIpSmsServer
         public string CELL_ID { get; protected set; }
         public string CGATT { get; protected set; }
 
-        public override void ExtractData(string data)
+        public override void ExtractData(string[] dlist)
         {
-            // split into data row
-            var dlist = data.Split(new char[] { ';' });
-
             gsm_signal = FindStringValue("signal", dlist);
             gsm_status = FindStringValue("gsm_status", dlist);
             voip_status = FindStringValue("voip_status", dlist);

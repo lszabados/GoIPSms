@@ -12,17 +12,19 @@ namespace GoIPSmsServerConsole.cs
         {
             var serviceCollection = new ServiceCollection();
             ConfigureServices(serviceCollection);
+            
 
             var serviceProvider = serviceCollection.BuildServiceProvider();
             var logger = serviceProvider.GetService<ILogger<Program>>();
+            
 
             Console.WriteLine("GoIP Sms Server");
             Console.Write("Starting....");
 
             GoIPSmsServer server = serviceProvider.GetService<GoIPSmsServer>();
 
-            server.OnRegistration += Server_OnRegistration;
-            server.OnMessage += Server_OnMessage;
+            //server.OnRegistration += Server_OnRegistration;
+            //server.OnMessage += Server_OnMessage;
 
             server.StartServer();
             while (server.Status == ServerStatus.Starting)
@@ -66,9 +68,8 @@ namespace GoIPSmsServerConsole.cs
                 //{
                 //    System.Threading.Thread.Sleep(100);
                 //}
-
             }
-
+            
             Console.Write("Stopping....");
             server.StopServer();
             
@@ -123,7 +124,13 @@ namespace GoIPSmsServerConsole.cs
                     option.Port = 44444;
                     option.ServerId = "lacika";
                 })
-                .AddLogging(configure => configure.AddConsole())
+                .AddLogging(configure => configure
+                    .AddConsole()
+                    .AddDebug()
+                    .AddFilter("Voxo.GoIpSmsServer.GoIPSmsServer", LogLevel.Debug)
+                    .AddFilter("Microsoft", LogLevel.Debug)
+                    .AddFilter("System", LogLevel.Debug)
+                )
                 .AddTransient<GoIPSmsServer>()
                 .AddTransient<GoIpSmsClient>();
         }

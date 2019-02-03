@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -11,8 +12,9 @@ namespace Voxo.GoIpSmsServer
 {
     public struct UdpState
     {
-        public UdpClient u;
-        public IPEndPoint e;
+        public UdpClient client;
+        public IPEndPoint localEp;
+        public IPEndPoint remoteEp;
     }
 
     public enum ServerStatus : byte { Stopped, Started, Stopping, Starting }
@@ -64,9 +66,9 @@ namespace Voxo.GoIpSmsServer
         /// </summary>
         /// <param name="options">Initialization options</param>
         /// <param name="logger">logging interface</param>
-        public GoIPSmsServer(GoIPSmsServerOptions options, ILogger<GoIPSmsServer> logger)
+        public GoIPSmsServer(IOptions<GoIPSmsServerOptions> options, ILogger<GoIPSmsServer> logger)
         {
-            _options = options;
+            _options = options.Value;
             _logger = logger;
             _logger.LogDebug("Create GoIPSmsServer. ServerId: {0} Listening port: {1}", _options.ServerId, _options.Port);
         }
@@ -128,16 +130,23 @@ namespace Voxo.GoIpSmsServer
         private void ReceiveMessages(CancellationToken cancellationToken)
         {
             // Receive a message
-            IPEndPoint e = new IPEndPoint(IPAddress.Any, _options.Port);
-            UdpClient u = new UdpClient(e);
+            IPEndPoint LocalEp = new IPEndPoint(IPAddress.Any, _options.Port);
+            IPEndPoint RemoteEp = new IPEndPoint(IPAddress.Any, 0);
+            UdpClient udpClient = new UdpClient(LocalEp);
 
-            UdpState s = new UdpState();
-            s.e = e;
-            s.u = u;
+            UdpState s = new UdpState
+            {
+                localEp = LocalEp,
+                remoteEp = RemoteEp,
+                client = udpClient
+            };
+
+
+
 
             while (true)
             {
-                u.BeginReceive(new AsyncCallback(ReceiveCallback), s);
+                s.client.BeginReceive(new AsyncCallback(ReceiveCallback), s);
 
                 // Do some work while we wait for a message. For this example, we'll just sleep
                 while (!messageReceived && !cancellationToken.IsCancellationRequested)
@@ -159,31 +168,32 @@ namespace Voxo.GoIpSmsServer
         {
             UdpState us = (UdpState)(ar.AsyncState);
 
-            int port = us.e.Port;
-            string host = us.e.Address.ToString();
-
-            _logger.LogDebug("Start receive data. ServerId: {0} Server port {1} Sender host: {2} Sender port: {3}", 
-                _options.ServerId, _options.Port, host, port);
+            _logger.LogDebug("Start receive data. ServerId: {0} Server port {1}", 
+                _options.ServerId, _options.Port);
 
             string receiveString;
 
             try
             {
-                byte[] receiveBytes = us.u.EndReceive(ar, ref us.e);
+                byte[] receiveBytes = us.client.EndReceive(ar, ref us.remoteEp);
+
+                _logger.LogDebug("Received data. ServerId: {0} Server port {1} Host ip: {2} Host port {3}",
+                     _options.ServerId, _options.Port, us.remoteEp.Address.ToString(), us.remoteEp.Port);
+
                 receiveString = Encoding.ASCII.GetString(receiveBytes);
             }
             catch (Exception e)
             {
                 _logger.LogWarning("Data receive error. ServerId: {0} Server port {1} Sender host: {2} Sender port: {3} Error message: {4}",
-                _options.ServerId, _options.Port, host, port, e.Message);
+                _options.ServerId, _options.Port, us.remoteEp.Address.ToString(), us.remoteEp.Port, e.Message);
                 messageReceived = true;
                 return;
             } 
 
             _logger.LogDebug("End receive data. ServerId: {0} Server port {1} Sender host: {2} Sender port: {3} Data: {4}",
-                _options.ServerId, _options.Port, host, port, receiveString);
+                _options.ServerId, _options.Port, us.remoteEp.Address.ToString(), us.remoteEp.Port, receiveString);
 
-            ExtractData(receiveString, host, port);
+            ExtractData(receiveString, us.remoteEp.Address.ToString(), us.remoteEp.Port);
             
             messageReceived = true;
         }
@@ -203,8 +213,8 @@ namespace Voxo.GoIpSmsServer
             }
             catch (Exception e)
             {
-                _logger.LogWarning("Data sending error. LocalId: {0} Local port: {1} Destination host: {2} Destination port: {3}",
-                _options.ServerId, _options.Port, host, port);
+                _logger.LogWarning("Data sending error. LocalId: {0} Local port: {1} Destination host: {2} Destination port: {3} Error message: {4}",
+                _options.ServerId, _options.Port, host, port, e.Message);
             }
 
             _logger.LogDebug("Send data end. LocalId: {0} Local port: {1} Destination host: {2} Destination port: {3}",
@@ -287,14 +297,14 @@ namespace Voxo.GoIpSmsServer
                 // TODO: log?
                 _logger.LogInformation("GoIP Cell list event authentication error. Data: {0}", data);
                 Send(ACKPacketFactory.ACK("CELLS", packet.receiveid.ToString(), "Cell list event authentication error!"), host, port);
-                OnCellListChanged(this, new GoIPCellListEvenetArgs("GoIP Cell list event authentication error!", packet.celllist, host, port));
+                OnCellListChanged?.Invoke(this, new GoIPCellListEvenetArgs("GoIP Cell list event authentication error!", packet.celllist, host, port));
                 return;
             }
 
             _logger.LogInformation("Received GoIP Cell list event. ReceiveId: {0} Cell list: {1}", packet.receiveid, packet.celllist);
 
             Send(ACKPacketFactory.ACK("CELLS", packet.receiveid.ToString(), ""), host, port);
-            OnCellListChanged(this, new GoIPCellListEvenetArgs("OK", packet.celllist, host, port));
+            OnCellListChanged?.Invoke(this, new GoIPCellListEvenetArgs("OK", packet.celllist, host, port));
         }
 
         private void RemainData(string data, string host, int port)
@@ -309,7 +319,7 @@ namespace Voxo.GoIpSmsServer
                 // TODO: log?
                 _logger.LogInformation("GoIP remain event authentication error. Data: {0}", data);
                 Send(ACKPacketFactory.ACK("REMAIN", packet.receiveid.ToString(), "Remain event authentication error!"), host, port);
-                OnRemain(this, new GoIPRemainEventArgs("GoIP remain event authentication error!", packet, host, port));
+                OnRemain?.Invoke(this, new GoIPRemainEventArgs("GoIP remain event authentication error!", packet, host, port));
                 return;
             }
 
@@ -318,7 +328,7 @@ namespace Voxo.GoIpSmsServer
             _logger.LogInformation("Received GoIP record event. ReceiveId: {0} Remain time: {1}", packet.receiveid, packet.gsm_remain_time);
 
             Send(ACKPacketFactory.ACK("REMAIN", packet.receiveid.ToString(), ""), host, port);
-            OnRemain(this, new GoIPRemainEventArgs("OK", packet, host, port));
+            OnRemain?.Invoke(this, new GoIPRemainEventArgs("OK", packet, host, port));
         }
 
         private void RecordData(string data, string host, int port)
@@ -333,7 +343,7 @@ namespace Voxo.GoIpSmsServer
                 // TODO: log?
                 _logger.LogInformation("GoIP record event authentication error. Data: {0}", data);
                 Send(ACKPacketFactory.ACK("RECORD", packet.receiveid.ToString(), "Record event authentication error!"), host, port);
-                OnRecord(this, new GoIPRecordEventArgs("GoIP record event authentication error!", packet, host, port));
+                OnRecord?.Invoke(this, new GoIPRecordEventArgs("GoIP record event authentication error!", packet, host, port));
                 return;
             }
 
@@ -342,7 +352,7 @@ namespace Voxo.GoIpSmsServer
             _logger.LogInformation("Received GoIP record event. ReceiveId: {0} Send num: {1} Direction: {2}", packet.receiveid, packet.send_num, packet.direction);
 
             Send(ACKPacketFactory.ACK("RECORD", packet.receiveid.ToString(), ""), host, port);
-            OnRecord(this, new GoIPRecordEventArgs("OK", packet, host, port));
+            OnRecord?.Invoke(this, new GoIPRecordEventArgs("OK", packet, host, port));
         }
 
         private void State(string data, string host, int port)
@@ -357,7 +367,7 @@ namespace Voxo.GoIpSmsServer
                 // TODO: log?
                 _logger.LogInformation("GoIP state report authentication error. Data: {0}", data);
                 Send(ACKPacketFactory.ACK("STATE", packet.receiveid.ToString(), "State authentication error!"), host, port);
-                OnStateChange(this, new GoIPStateEventArgs("GoIP state authentication error!", packet, host, port));
+                OnStateChange?.Invoke(this, new GoIPStateEventArgs("GoIP state authentication error!", packet, host, port));
                 return;
             }
 
@@ -366,7 +376,7 @@ namespace Voxo.GoIpSmsServer
             _logger.LogInformation("Received GoIP state. ReceiveId: {0} : Gsm state: {1}", packet.receiveid, packet.gsm_remain_state );
 
             Send(ACKPacketFactory.ACK("STATE", packet.receiveid.ToString(), ""), host, port);
-            OnStateChange(this, new GoIPStateEventArgs("OK", packet, host, port));
+            OnStateChange?.Invoke(this, new GoIPStateEventArgs("OK", packet, host, port));
         }
 
         private void DeliverReport(string data, string host, int port)
@@ -381,7 +391,7 @@ namespace Voxo.GoIpSmsServer
                 // TODO: log?
                 _logger.LogInformation("Received SMS delivery report authentication error. Data: {0}", data);
                 Send(ACKPacketFactory.ACK("DELIVER", packet.receiveid.ToString(), "Authentication error!"), host, port);
-                OnDeliveryReport(this, new GoIPDeliveryReportEventArgs("Delivery report authentication error!", packet, host, port));
+                OnDeliveryReport?.Invoke(this, new GoIPDeliveryReportEventArgs("Delivery report authentication error!", packet, host, port));
                 return;
             }
 
@@ -390,7 +400,7 @@ namespace Voxo.GoIpSmsServer
             _logger.LogInformation("Received SMS delivery report OK. ReceiveId: {3} Send number: {0} SMS no: {1}", packet.send_num, packet.sms_no, packet.receiveid);
 
             Send(ACKPacketFactory.ACK("DELIVER", packet.receiveid.ToString(), ""), host, port);
-            OnDeliveryReport(this, new GoIPDeliveryReportEventArgs("OK", packet, host, port));
+            OnDeliveryReport?.Invoke(this, new GoIPDeliveryReportEventArgs("OK", packet, host, port));
         }
 
         private void ReceiveSms(string data, string host, int port)
@@ -400,21 +410,21 @@ namespace Voxo.GoIpSmsServer
             GoIPMessagePacket packet = new GoIPMessagePacket(data);
             
             // if auth error  
-            if (packet.AuthId != _options.ServerId || packet.Password != _options.AuthPassword)
+            if (packet.authid != _options.ServerId || packet.password != _options.AuthPassword)
             {
                 // TODO: log?
                 _logger.LogInformation("Received SMS data authentication error. Data: {0}", data);
-                Send(ACKPacketFactory.ACK("RECEIVE", packet.ReceiveId, "Authentication error!"), host, port);
-                OnMessage(this, new GoIPMessageEventArgs("Receive SMS authentication error!", packet, host, port));
+                Send(ACKPacketFactory.ACK("RECEIVE", packet.receiveid.ToString(), "Authentication error!"), host, port);
+                OnMessage?.Invoke(this, new GoIPMessageEventArgs("Receive SMS authentication error!", packet, host, port));
                 return;
             }
 
-            packet.Password = "";  // Delete password for security reasons
+            packet.password = "";  // Delete password for security reasons
 
-            _logger.LogInformation("Received SMS OK. ReceiveId: {3} Mobile: {0} Message: {1}", packet.Srcnum, packet.Message, packet.ReceiveId);
+            _logger.LogInformation("Received SMS OK. ReceiveId: {3} Mobile: {0} Message: {1}", packet.Srcnum, packet.Message, packet.receiveid);
 
-            Send(ACKPacketFactory.ACK("RECEIVE", packet.ReceiveId, ""), host, port);
-            OnMessage(this, new GoIPMessageEventArgs("OK", packet, host, port));
+            Send(ACKPacketFactory.ACK("RECEIVE", packet.receiveid.ToString(), ""), host, port);
+            OnMessage?.Invoke(this, new GoIPMessageEventArgs("OK", packet, host, port));
         }
 
         /// <summary>
@@ -433,7 +443,7 @@ namespace Voxo.GoIpSmsServer
                 // TODO: log?
                 _logger.LogInformation("Received registration data authentication error. Data: {0}", data);
                 Send(ACKPacketFactory.ACK_MESSAGE(packet.req, 400), host, port);
-                OnRegistration(this, new GoIPRegisterEventArgs("Authentication error!", packet, host, port, 400));
+                OnRegistration?.Invoke(this, new GoIPRegisterEventArgs("Authentication error!", packet, host, port, 400));
                 return;
             }
 
@@ -443,13 +453,13 @@ namespace Voxo.GoIpSmsServer
             {
                 _logger.LogInformation("Received SMS data without IMEI. packet id: {0}", packet.authid);
                 Send(ACKPacketFactory.ACK_MESSAGE(packet.req, 400), host, port);
-                OnRegistration(this, new GoIPRegisterEventArgs("No IMEI! (No SIM?)", packet, host, port, 400));
+                OnRegistration?.Invoke(this, new GoIPRegisterEventArgs("No IMEI! (No SIM?)", packet, host, port, 400));
                 return;
             }
 
             _logger.LogInformation("Received registration OK. Packet id: {0} IMEI: {1}", packet.authid, packet.imei);
             Send(ACKPacketFactory.ACK_MESSAGE(packet.req, 200), host, port);
-            OnRegistration(this, new GoIPRegisterEventArgs("OK", packet, host, port, 400));
+            OnRegistration?.Invoke(this, new GoIPRegisterEventArgs("OK", packet, host, port, 400));
         }
     }
 }
