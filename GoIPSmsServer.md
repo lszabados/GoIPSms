@@ -66,6 +66,3 @@ Raise `OnRecord` when receive RECORD data stream from GoIP device. When Goip in 
 Raise `OnRemain` when receive REMAIN data from GoIP device. After each call ,goip send remain time to server
 
 Raise `OnCellListChanged` when receive changed cell list from GoIP device.
-
-
-
