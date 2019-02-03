@@ -10,7 +10,8 @@ This project is in very early preview stage and it's not suggested to use it in 
 
 ## Documentation
 
-  TODO
+  [GoIPSmsServer](GoIPSmsServer.md)
+  [GoIPSmsClinet](GoIPSmsClient.md)
 
 ## Server Features
 
@@ -54,3 +55,4 @@ This product is an open source platform
 # LICENCE
 
 MIT 
+
