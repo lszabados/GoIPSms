@@ -4,6 +4,9 @@ using System.Text;
 
 namespace Voxo.GoIpSmsServer
 {
+    /// <summary>
+    /// GoIP device messages generator
+    /// </summary>
     public static class ACKPacketFactory
     {
         public static string ACK_MESSAGE(long req, int status)
@@ -49,8 +52,5 @@ namespace Voxo.GoIpSmsServer
                 return string.Format(@"RECEIVE {0} ERROR {1}\n", receiveid, errorMsg);
             }
         }
-
-
-
     }
 }

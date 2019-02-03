@@ -4,6 +4,9 @@ using System.Text;
 
 namespace Voxo.GoIpSmsServer
 {
+    /// <summary>
+    /// GoIP device SMS message packet
+    /// </summary>
     public class GoIPMessagePacket : GoIPPacketBase
     {
         public GoIPMessagePacket(string data) : base(data)

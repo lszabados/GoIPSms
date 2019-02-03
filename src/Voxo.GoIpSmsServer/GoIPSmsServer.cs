@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
@@ -16,11 +17,15 @@ namespace Voxo.GoIpSmsServer
 
     public enum ServerStatus : byte { Stopped, Started, Stopping, Starting }
 
+    /// <summary>
+    /// GoIP Sms Server implementation
+    /// </summary>
     public class GoIPSmsServer
     {
         private readonly object balanceLock = new object();
         private bool messageReceived = false;
         private GoIPSmsServerOptions _options;
+        private readonly ILogger<GoIPSmsServer> _logger;
         private CancellationTokenSource cancelationTokenSource;
 
         // registration event
@@ -34,26 +39,40 @@ namespace Voxo.GoIpSmsServer
         public bool ServerStarted { get { return Status == ServerStatus.Started; } }
         public ServerStatus Status { get; internal set; } = ServerStatus.Stopped;
 
-
-        public GoIPSmsServer(GoIPSmsServerOptions options)
+        /// <summary>
+        /// GoIPSmsServer constructor
+        /// </summary>
+        /// <param name="options">Initialization options</param>
+        /// <param name="logger">logging interface</param>
+        public GoIPSmsServer(GoIPSmsServerOptions options, ILogger<GoIPSmsServer> logger)
         {
             _options = options;
+            _logger = logger;
+            _logger.LogDebug("Create GoIPSmsServer. ServerId: {0} Listening port: {1}", _options.ServerId, _options.Port);
         }
 
+        /// <summary>
+        /// Start server instance
+        /// </summary>
         public void StartServer()
         {
             if (Status == ServerStatus.Stopped)
             {
+                _logger.LogInformation("Server start request. ServerId: {0} Listening port: {1}", _options.ServerId, _options.Port);
                 Status = ServerStatus.Starting;
                 cancelationTokenSource = new CancellationTokenSource();
                 GoIPSmsServerListener(_options.Port, cancelationTokenSource.Token);
             } // else log?
         }
 
+        /// <summary>
+        /// Stop server instance
+        /// </summary>
         public void StopServer()
         {
             if (Status == ServerStatus.Started)
             {
+                _logger.LogInformation("Server stop request. ServerId: {0} Listening port: {1}", _options.ServerId, _options.Port);
                 Status = ServerStatus.Stopping;
                 cancelationTokenSource.Cancel();
             }
@@ -66,17 +85,27 @@ namespace Voxo.GoIpSmsServer
             // Start a task and return it
             task = Task.Run(() =>
             {
-                ReceiveMessages(cancellationToken);
+                try
+                {
+                    ReceiveMessages(cancellationToken);
+                }
+                catch (Exception e)
+                {
+                    _logger.LogWarning("Server stopped error. ServerId: {0} Listening port: {1} Error message: {2}", _options.ServerId, _options.Port, e.Message);
+                }
 
-                Status = ServerStatus.Stopped;               
+                Status = ServerStatus.Stopped;
+                _logger.LogInformation("Server stopped successfully. ServerId: {0} Listening port: {1}", _options.ServerId, _options.Port);
             });
 
             Status = ServerStatus.Started;
+            
+            _logger.LogInformation("Server started successfully. ServerId: {0} Listening port: {1}", _options.ServerId, _options.Port);
 
             return task;
         }
 
-        public void ReceiveMessages(CancellationToken cancellationToken)
+        private void ReceiveMessages(CancellationToken cancellationToken)
         {
             // Receive a message
             IPEndPoint e = new IPEndPoint(IPAddress.Any, _options.Port);
@@ -100,27 +129,52 @@ namespace Voxo.GoIpSmsServer
 
                 if (cancellationToken.IsCancellationRequested)
                 {
+                    _logger.LogDebug("Server cancellation request. ServerId: {0} Listening port: {1}", _options.ServerId, _options.Port);
                     break;
                 }
             }
-
-            Status = ServerStatus.Stopped;
         }
 
-        public void ReceiveCallback(IAsyncResult ar)
+        private void ReceiveCallback(IAsyncResult ar)
         {
             UdpState us = (UdpState)(ar.AsyncState);
-            
-            byte[] receiveBytes = us.u.EndReceive(ar, ref us.e);
-            string receiveString = Encoding.ASCII.GetString(receiveBytes);
 
-            ExtractData(receiveString, us.e.Address.ToString(), us.e.Port);
+            int port = us.e.Port;
+            string host = us.e.Address.ToString();
+
+            _logger.LogDebug("Start receive data. ServerId: {0} Server port {1} Sender host: {2} Sender port: {3}", 
+                _options.ServerId, _options.Port, host, port);
+
+            string receiveString;
+
+            try
+            {
+                byte[] receiveBytes = us.u.EndReceive(ar, ref us.e);
+                receiveString = Encoding.ASCII.GetString(receiveBytes);
+            }
+            catch (Exception e)
+            {
+                _logger.LogWarning("Data receive error. ServerId: {0} Server port {1} Sender host: {2} Sender port: {3} Error message: {4}",
+                _options.ServerId, _options.Port, host, port, e.Message);
+                messageReceived = true;
+                return;
+            } 
+
+            _logger.LogDebug("End receive data. ServerId: {0} Server port {1} Sender host: {2} Sender port: {3} Data: {4}",
+                _options.ServerId, _options.Port, host, port, receiveString);
+
+            ExtractData(receiveString, host, port);
             
             messageReceived = true;
         }
 
+
+
         private void Send(string data, string host, int port)
         {
+            _logger.LogDebug("Start send data. LocalId: {0} Local port: {1} Destination host: {2} Destination port: {3} Data: {4}",
+                _options.ServerId, _options.Port, host, port, data);
+
             UdpClient udpClient = new UdpClient(host, port);
             Byte[] sendBytes = Encoding.UTF8.GetBytes(data);
             try
@@ -129,8 +183,12 @@ namespace Voxo.GoIpSmsServer
             }
             catch (Exception e)
             {
-                // TODO : log?
+                _logger.LogWarning("Data sending error. LocalId: {0} Local port: {1} Destination host: {2} Destination port: {3}",
+                _options.ServerId, _options.Port, host, port);
             }
+
+            _logger.LogDebug("Send data end. LocalId: {0} Local port: {1} Destination host: {2} Destination port: {3}",
+                _options.ServerId, _options.Port, host, port);
         }
 
         private void SendThread(string data, string host, int port)
@@ -147,30 +205,45 @@ namespace Voxo.GoIpSmsServer
         /// <param name="Data">UDP adat</param>
         private void ExtractData(string Data, string host, int port)
         {
+            bool extracted = false;
+            
             if (Data.StartsWith("req:"))
             {
                 Registration(Data, host, port);
+                extracted = true;
             }
 
             if (Data.StartsWith("RECEIVE:"))
             {
                 ReceiveSms(Data, host, port);
+                extracted = true;
+            }
+
+            if (!extracted)
+            {
+                _logger.LogInformation("Unknown data, not extracted. Data {0}", Data);
             }
         }
 
         private void ReceiveSms(string data, string host, int port)
         {
+            _logger.LogDebug("Start SMS processing");
+
             GoIPMessagePacket packet = new GoIPMessagePacket(data);
+            
             // if auth error  
             if (packet.Id != _options.ServerId || packet.Password != _options.AuthPassword)
             {
                 // TODO: log?
+                _logger.LogInformation("Received SMS data authentication error. Data: {0}", data);
                 Send(ACKPacketFactory.RECEIVE_SMS_ACK(packet.ReceiveId, "Authentication error!"), host, port);
                 OnMessage(this, new GoIPMessageEventArgs("Authentication error!", packet, host, port));
                 return;
             }
 
             packet.Password = "";  // Delete password for security reasons
+
+            _logger.LogInformation("Received SMS OK. ReceiveId: {3} Mobile: {0} Message: {1}", packet.Srcnum, packet.Message, packet.ReceiveId);
 
             Send(ACKPacketFactory.RECEIVE_SMS_ACK(packet.ReceiveId, ""), host, port);
             OnMessage(this, new GoIPMessageEventArgs("OK", packet, host, port));
@@ -182,12 +255,15 @@ namespace Voxo.GoIpSmsServer
         /// <param name="data"></param>
         private void Registration(string data, string host, int port)
         {
+            _logger.LogDebug("Start Registration processing");
+
             GoIPRegistrationPacket packet = new GoIPRegistrationPacket(data);
 
             // if auth error  
             if (packet.id != _options.ServerId || packet.password != _options.AuthPassword)
             {
                 // TODO: log?
+                _logger.LogInformation("Received registration data authentication error. Data: {0}", data);
                 Send(ACKPacketFactory.ACK_MESSAGE(packet.req, 400), host, port);
                 OnRegistration(this, new GoIPRegisterEventArgs("Authentication error!", packet, host, port, 400));
                 return;
@@ -197,12 +273,13 @@ namespace Voxo.GoIpSmsServer
 
             if (string.IsNullOrEmpty(packet.imei))
             {
-                // TODO: log?
+                _logger.LogInformation("Received SMS data without IMEI. packet id: {0}", packet.id);
                 Send(ACKPacketFactory.ACK_MESSAGE(packet.req, 400), host, port);
                 OnRegistration(this, new GoIPRegisterEventArgs("No IMEI! (No SIM?)", packet, host, port, 400));
                 return;
             }
 
+            _logger.LogInformation("Received registration OK. Packet id: {0} IMEI: {1}", packet.id, packet.imei);
             Send(ACKPacketFactory.ACK_MESSAGE(packet.req, 200), host, port);
             OnRegistration(this, new GoIPRegisterEventArgs("OK", packet, host, port, 400));
         }
