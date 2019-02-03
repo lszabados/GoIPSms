@@ -13,7 +13,12 @@ Use in the Program.cs ConfigureServices section
 			option.Port = 44444;
 			option.ServerId = "XXXX";
 		})
-	.AddSingleton<GoIPSmsServer>();
+		.AddLogging(configure => configure
+                    .AddConsole()
+                    .AddDebug()
+					.AddFilter("Voxo.GoIpSmsServer.GoIPSmsServer", LogLevel.Information)
+		)
+		.AddSingleton<GoIPSmsServer>();
 ````
 
 Create instance:
@@ -30,8 +35,6 @@ Direct create
 	var server = new GoIPSmsServer(new GoIPSmsServerOptions()
                     { AuthPassword = "hhh", Port = 44444, ServerId = "lkljkl" }, 
                     new NullLogger<GoIPSmsServer>());
-
-	);
 ````
 
 ## Start server
