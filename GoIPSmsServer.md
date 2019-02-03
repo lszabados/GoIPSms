@@ -36,11 +36,11 @@ Direct create
 
 ## Start server
 
-Use ˙˙StartServer()˙˙ to start the server.
+Use `StartServer()` to start the server.
 
 ## Stop server
 
-Use ˙˙StopServer()˙˙ to stop the server.
+Use `StopServer()` to stop the server.
 
 ## Server State
 
