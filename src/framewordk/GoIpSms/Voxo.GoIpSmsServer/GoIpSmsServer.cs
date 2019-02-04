@@ -58,6 +58,10 @@ namespace Voxo.GoIpSms
         public delegate void HangupHandler(object server, GoIpHangupEventArgs messageData);
         public event HangupHandler OnHangup;
 
+        // EXPIRY event
+        public delegate void ExpiryHandler(object server, GoIpExpiryEventArgs messageData);
+        public event ExpiryHandler OnExpiry;
+
         // Cell list event
         public delegate void CellListHandler(object server, GoIpCellListEvenetArgs messageData);
         public event CellListHandler OnCellListChanged;
@@ -290,6 +294,12 @@ namespace Voxo.GoIpSms
                 extracted = true;
             }
 
+            if (Data.StartsWith("EXPIRY:"))
+            {
+                ExpiryData(Data, host, port);
+                extracted = true;
+            }
+
             if (Data.StartsWith("CELLS:"))
             {
                 CellList(Data, host, port);
@@ -300,6 +310,30 @@ namespace Voxo.GoIpSms
             {
                 _logger.LogInformation("Unknown data, not extracted. Data {0}", Data);
             }
+        }
+
+        private void ExpiryData(string data, string host, int port)
+        {
+            _logger.LogDebug("Start GoIp Expiry event");
+
+            GoIpExpiryPacket packet = new GoIpExpiryPacket(data);
+
+            // if auth error  
+            if (packet.authid != _options.AuthId || packet.password != _options.AuthPassword)
+            {
+                // TODO: log?
+                _logger.LogInformation("GoIp Expiry event authentication error. Data: {0}", data);
+                Send(ACKPacketFactory.ACK("EXPIRY", packet.receiveid.ToString(), "Expiry event authentication error!"), host, port);
+                OnExpiry?.Invoke(this, new GoIpExpiryEventArgs("GoIp Expiry event authentication error!", packet, host, port));
+                return;
+            }
+
+            packet.password = "";  // Delete password for security reasons
+
+            _logger.LogInformation("Received GoIp Expiry event. ReceiveId: {0} Expiry: {1}", packet.receiveid, packet.exp);
+
+            Send(ACKPacketFactory.ACK("EXPIRY", packet.receiveid.ToString(), ""), host, port);
+            OnExpiry?.Invoke(this, new GoIpExpiryEventArgs("OK", packet, host, port));
         }
 
         private void HangupData(string data, string host, int port)

@@ -70,4 +70,6 @@ Raise `OnRemain` when receive REMAIN data from GoIP device. After each call ,goi
 
 Raise `OnHangup` when receive HANGUP data from GoIP device. Not documented event!!!
 
+Raise `OnExpiry` when receive EXPIRY data from GoIP device. Not documented event!!!
+
 Raise `OnCellListChanged` when receive changed cell list from GoIP device.

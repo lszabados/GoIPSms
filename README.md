@@ -21,6 +21,8 @@ This project is in very early preview stage and it's not suggested to use it in 
 - Status Event
 - Record Event
 - Remain Evnet
+- Hangup Event (Not documented)
+- Expiry Event (Not documented)
 - Cell list Event
 
 ## Client Features
