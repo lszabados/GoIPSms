@@ -4,16 +4,18 @@ using System.Text;
 
 namespace Voxo.GoIpSms
 {
-    public class GoIpRemainPacket : GoIpPacket
+    
+
+    public class GoIpHangupPacket : GoIpPacket
     {
-        public GoIpRemainPacket(string data) : base(data,"REMAIN")
+        public GoIpHangupPacket(string data) : base(data, "HANGUP")
         {
 
         }
 
-       
+
         public string gsm_remain_time { get; protected set; }
-        
+
 
         public override void ExtractData(string[] dlist)
         {

@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Voxo.GoIpSmsServer
+namespace Voxo.GoIpSms
 {
     public struct UdpState
     {

@@ -1,4 +1,4 @@
-﻿namespace Voxo.GoIpSmsServer
+﻿namespace Voxo.GoIpSms
 {
     /// <summary>
     /// GoIpSmsServer initialization options

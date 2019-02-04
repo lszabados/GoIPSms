@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Voxo.GoIpSmsServer
+namespace Voxo.GoIpSms
 {
     public class GoIpDeliveryReportEventArgs : EventArgs
     {

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Voxo.GoIpSmsServer
+namespace Voxo.GoIpSms
 {
     public enum GoIpRecordDirection : int { INCOMING = 1, OUTGOING} 
 

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Voxo.GoIpSmsServer
+namespace Voxo.GoIpSms
 {
     /// <summary>
     /// GoIp device Registration packet

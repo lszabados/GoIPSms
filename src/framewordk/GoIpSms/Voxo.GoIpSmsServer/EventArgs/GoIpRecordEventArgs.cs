@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Voxo.GoIpSmsServer
+namespace Voxo.GoIpSms
 {
     public class GoIpRecordEventArgs : EventArgs
     {
