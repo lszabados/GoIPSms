@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28010.2036
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Voxo.GoIpSmsServer", "Voxo.GoIpSmsServer\Voxo.GoIpSmsServer.csproj", "{A5524730-AEC2-45DB-97EA-B6B8921A0C84}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Voxo.GoIpSms", "Voxo.GoIpSmsServer\Voxo.GoIpSms.csproj", "{A5524730-AEC2-45DB-97EA-B6B8921A0C84}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GoIPSmsServerConsole.cs", "GoIPSmsServerConsole.cs\GoIPSmsServerConsole.cs.csproj", "{206AB002-FB1E-4CC3-9E4A-041B0AA2CDC0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GoIPSmsConsole.cs", "GoIPSmsServerConsole.cs\GoIPSmsConsole.cs.csproj", "{206AB002-FB1E-4CC3-9E4A-041B0AA2CDC0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

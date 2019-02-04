@@ -35,21 +35,21 @@ namespace Voxo.GoIpSmsServer
         public string ErrorMessage { get; private set; } = "";
 
         // event handlers
-        public delegate void SmsSendError(object server, GoIPSmsSendErrorEventArgs eventArgs);
+        public delegate void SmsSendError(object server, GoIpSmsSendErrorEventArgs eventArgs);
 
         /// <summary>
         /// Raise for all SMS sending errors
         /// </summary>
         public event SmsSendError OnSmsSendError;
 
-        public delegate void SmsSendMessageStatus(object server, GoIPSendMessageEventArgs eventArgs);
+        public delegate void SmsSendMessageStatus(object server, GoIpSendMessageEventArgs eventArgs);
 
         /// <summary>
         /// Raise for every SMS sending event
         /// </summary>
         public event SmsSendMessageStatus OnSmsSendMessage;
 
-        public delegate void SmsSendEnd(object server, GoIPSmsSendEndEventArgs eventArgs);
+        public delegate void SmsSendEnd(object server, GoIpSmsSendEndEventArgs eventArgs);
 
         /// <summary>
         /// Raise for nd of SMS sending process
@@ -83,14 +83,14 @@ namespace Voxo.GoIpSmsServer
             if (!BulkSmsRequest(message))
             {
                 _logger.LogInformation("Bulk SMS sending proceure ended. SendId: {0}", SendId);
-                OnSmsSendEnd(this, new GoIPSmsSendEndEventArgs(SendId));
+                OnSmsSendEnd(this, new GoIpSmsSendEndEventArgs(SendId));
                 return;
             }
 
             if (!AuthenticationRequest())
             {
                 _logger.LogInformation("Bulk SMS sending proceure ended. SendId: {0}", SendId);
-                OnSmsSendEnd(this, new GoIPSmsSendEndEventArgs(SendId));
+                OnSmsSendEnd(this, new GoIpSmsSendEndEventArgs(SendId));
                 return;
             }
 
@@ -107,15 +107,15 @@ namespace Voxo.GoIpSmsServer
                 catch (Exception e)
                 {
                     // if unknown error
-                    _logger.LogWarning("Bulk SMS sending error. TelId: {1} SendId: {2} Message: {0}", e.Message, telid, SendId);
-                    OnSmsSendError(this, new GoIPSmsSendErrorEventArgs(e.Message, SendId));
+                    _logger.LogWarning("Bulk SMS sending error. SendId: {0} TelId: {1} Message: {2}", SendId, telid, e.Message);
+                    OnSmsSendError(this, new GoIpSmsSendErrorEventArgs(e.Message, SendId));
                 } 
             }
 
             DoneRequest();
 
             _logger.LogInformation("Bulk SMS sending proceure ended. SendId: {0}", SendId);
-            OnSmsSendEnd(this, new GoIPSmsSendEndEventArgs(SendId));
+            OnSmsSendEnd(this, new GoIpSmsSendEndEventArgs(SendId));
         }
 
         private string GetCommand(string command, string logtext, bool needPassword = true)
@@ -149,7 +149,7 @@ namespace Voxo.GoIpSmsServer
             {
                 ErrorMessage = ret.Substring(string.Format("ERROR {0} ", SendId).Length);
                 _logger.LogWarning("{0} receive error. SendID: {1} Error message: {2}", logtext, SendId, ErrorMessage);
-                OnSmsSendError(this, new GoIPSmsSendErrorEventArgs(ErrorMessage, SendId));
+                OnSmsSendError(this, new GoIpSmsSendErrorEventArgs(ErrorMessage, SendId));
                 return "";
             }
 
@@ -157,7 +157,7 @@ namespace Voxo.GoIpSmsServer
             {
                 ErrorMessage = string.Format("{0} sending error!", logtext);
                 _logger.LogWarning("{0} receive error. SendID: {1} Return value: {2}", logtext, SendId, ret);
-                OnSmsSendError(this, new GoIPSmsSendErrorEventArgs(ErrorMessage, SendId));
+                OnSmsSendError(this, new GoIpSmsSendErrorEventArgs(ErrorMessage, SendId));
                 return "";
             }
 
@@ -187,7 +187,7 @@ namespace Voxo.GoIpSmsServer
             {
                 ErrorMessage = ret.Substring(string.Format("ERROR {0} ", SendId).Length);
                 _logger.LogWarning("{0} receive error. SendID: {1} Error message: {2}", logtext, SendId, ErrorMessage);
-                OnSmsSendError(this, new GoIPSmsSendErrorEventArgs(ErrorMessage, SendId));
+                OnSmsSendError(this, new GoIpSmsSendErrorEventArgs(ErrorMessage, SendId));
                 return "";
             }
 
@@ -195,7 +195,7 @@ namespace Voxo.GoIpSmsServer
             {
                 ErrorMessage = string.Format("{0} sending error!", logtext);
                 _logger.LogWarning("{0} receive error. SendID: {1} Return value: {2}", logtext, SendId, ret);
-                OnSmsSendError(this, new GoIPSmsSendErrorEventArgs(ErrorMessage, SendId));
+                OnSmsSendError(this, new GoIpSmsSendErrorEventArgs(ErrorMessage, SendId));
                 return "";
             }
 
@@ -294,12 +294,12 @@ namespace Voxo.GoIpSmsServer
         }
 
         /// <summary>
-        /// Reboot GoIP
+        /// Reboot GoIp
         /// </summary>
         /// <returns></returns>
-        public string RebootGoIP()
+        public string RebootGoIp()
         {
-            return GetCommand("svr_reboot_dev", "Reboot GoIP");
+            return GetCommand("svr_reboot_dev", "Reboot GoIp");
         }
 
         /// <summary>
@@ -335,7 +335,7 @@ namespace Voxo.GoIpSmsServer
             {
                 ErrorMessage = ret.Substring(string.Format("ERROR {0} ", SendId).Length);
                 _logger.LogWarning("{0} receive error. SendID: {1} Error message: {2}", "Set GSM call forward", SendId, ErrorMessage);
-                OnSmsSendError(this, new GoIPSmsSendErrorEventArgs(ErrorMessage, SendId));
+                OnSmsSendError(this, new GoIpSmsSendErrorEventArgs(ErrorMessage, SendId));
                 return false;
             }
 
@@ -343,7 +343,7 @@ namespace Voxo.GoIpSmsServer
             {
                 ErrorMessage = string.Format("{0} sending error!", "Set GSM call forward");
                 _logger.LogWarning("{0} receive error. SendID: {1} Return value: {2}", "Set GSM call forward", SendId, ret);
-                OnSmsSendError(this, new GoIPSmsSendErrorEventArgs(ErrorMessage, SendId));
+                OnSmsSendError(this, new GoIpSmsSendErrorEventArgs(ErrorMessage, SendId));
                 return false;
             }
 
@@ -486,21 +486,21 @@ namespace Voxo.GoIpSmsServer
                 if (ret.StartsWith(string.Format("OK {0} {1}", SendId, telid)))
                 {
                     _logger.LogInformation("SMS sending SUBMIT_NUMBER_REQUEST successfully. SendId: {0} TeliId: {1} Phone number: {2}", SendId, telid, number);
-                    OnSmsSendMessage(this, new GoIPSendMessageEventArgs(number, SendId, "OK"));
+                    OnSmsSendMessage(this, new GoIpSendMessageEventArgs(number, SendId, "OK"));
                     break;
                 }
 
                 if (ret.StartsWith(string.Format("ERROR {0} {1}", SendId, telid)))
                 {
                     _logger.LogWarning("SMS sending SUBMIT_NUMBER_REQUEST error. SendId: {0} TeliId: {1} Phone number: {2}", SendId, telid, number);
-                    OnSmsSendMessage(this, new GoIPSendMessageEventArgs(number, SendId, "ERROR"));
+                    OnSmsSendMessage(this, new GoIpSendMessageEventArgs(number, SendId, "ERROR"));
                     break;
                 }
 
                 if (ret.StartsWith(string.Format("WAIT {0} {1}", SendId, telid)))
                 {
                     _logger.LogInformation("SMS sending SUBMIT_NUMBER_REQUEST WAIT. SendId: {0} TeliId: {1} Phone number: {2}", SendId, telid, number);
-                    OnSmsSendMessage(this, new GoIPSendMessageEventArgs(number, SendId, "WAIT"));
+                    OnSmsSendMessage(this, new GoIpSendMessageEventArgs(number, SendId, "WAIT"));
                 }
                 else
                 {
@@ -565,7 +565,7 @@ namespace Voxo.GoIpSmsServer
             {
                 ErrorMessage = "BULK_SMS_REQUEST error!";
                 _logger.LogWarning("Bulk SMS BULK_SMS_REQUEST error. SendID: {0} Return value: {1}", SendId, ret);
-                OnSmsSendError(this, new GoIPSmsSendErrorEventArgs(ErrorMessage, SendId));
+                OnSmsSendError(this, new GoIpSmsSendErrorEventArgs(ErrorMessage, SendId));
                 return false;
             }
 
@@ -599,7 +599,7 @@ namespace Voxo.GoIpSmsServer
             {
                 ErrorMessage = "Data sending error!";
                 _logger.LogWarning("Bulk SMS data send error. SendId: {0}", SendId);
-                OnSmsSendError(this, new GoIPSmsSendErrorEventArgs(ErrorMessage, SendId));
+                OnSmsSendError(this, new GoIpSmsSendErrorEventArgs(ErrorMessage, SendId));
             }
 
 

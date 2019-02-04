@@ -4,10 +4,10 @@ using System.Text;
 
 namespace Voxo.GoIpSmsServer
 {
-    public class GoIPPacketBase
+    public class GoIpPacketBase
     {
 
-        public GoIPPacketBase(string data)
+        public GoIpPacketBase(string data)
         {
             var dlist = data.Split(new char[] { ';' });
             ExtractData(dlist);

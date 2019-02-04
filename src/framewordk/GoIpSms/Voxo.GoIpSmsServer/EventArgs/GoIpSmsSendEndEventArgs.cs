@@ -4,15 +4,13 @@ using System.Text;
 
 namespace Voxo.GoIpSmsServer
 {
-    public class GoIPSmsSendErrorEventArgs : EventArgs
+    public class GoIpSmsSendEndEventArgs : EventArgs
     {
-        public GoIPSmsSendErrorEventArgs(string message, string sendId)
+        public GoIpSmsSendEndEventArgs(string sendId)
         {
-            Message = message;
             SendId = sendId;
         }
 
-        public string Message { get; }
         public string SendId { get; }
     }
 }

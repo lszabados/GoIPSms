@@ -5,7 +5,7 @@ using System.Text;
 namespace Voxo.GoIpSmsServer
 {
     /// <summary>
-    /// GoIP device messages generator
+    /// GoIp device messages generator
     /// </summary>
     public static class ACKPacketFactory
     {

@@ -5,7 +5,7 @@ using System;
 using System.Threading.Tasks;
 using Voxo.GoIpSmsServer;
 
-namespace GoIPSmsServerConsole.cs
+namespace GoIpSmsServerConsole.cs
 {
     class Program
     {
@@ -19,10 +19,10 @@ namespace GoIPSmsServerConsole.cs
             var logger = serviceProvider.GetService<ILogger<Program>>();
             
 
-            Console.WriteLine("GoIP Sms Server");
+            Console.WriteLine("GoIp Sms Server");
             Console.Write("Starting....");
 
-            GoIPSmsServer server = serviceProvider.GetService<GoIPSmsServer>();
+            GoIpSmsServer server = serviceProvider.GetService<GoIpSmsServer>();
 
             //server.OnRegistration += Server_OnRegistration;
             //server.OnMessage += Server_OnMessage;
@@ -84,22 +84,22 @@ namespace GoIPSmsServerConsole.cs
             Console.WriteLine("Good by");
         }
 
-        private static void Client_OnSmsSendMessage(object server, GoIPSendMessageEventArgs eventArgs)
+        private static void Client_OnSmsSendMessage(object server, GoIpSendMessageEventArgs eventArgs)
         {
             Console.WriteLine("Bulk SMS Info: "+eventArgs.PhoneNumber+", "+eventArgs.SendId+", "+eventArgs.Status);
         }
 
-        private static void Client_OnSmsSendError(object server, GoIPSmsSendErrorEventArgs eventArgs)
+        private static void Client_OnSmsSendError(object server, GoIpSmsSendErrorEventArgs eventArgs)
         {
             Console.WriteLine("Bulk SMS ERROR: " + eventArgs.SendId + ", " + eventArgs.Message);
         }
 
-        private static void Client_OnSmsSendEnd(object server, GoIPSmsSendEndEventArgs eventArgs)
+        private static void Client_OnSmsSendEnd(object server, GoIpSmsSendEndEventArgs eventArgs)
         {
             Console.WriteLine("Bulk SMS sending ended.");
         }
 
-        private static void Server_OnMessage(object server, GoIPMessageEventArgs messageData)
+        private static void Server_OnMessage(object server, GoIpMessageEventArgs messageData)
         {
             if (messageData.Message == "OK")
             {
@@ -112,7 +112,7 @@ namespace GoIPSmsServerConsole.cs
             
         }
 
-        private static void Server_OnRegistration(object server, GoIPRegisterEventArgs registerData)
+        private static void Server_OnRegistration(object server, GoIpRegisterEventArgs registerData)
         {
             Console.WriteLine(DateTime.Now.ToString()+"  Host: "+registerData.Host+", Req:"+registerData.Packet.req+", Message: "+registerData.Message);
         }
@@ -120,7 +120,7 @@ namespace GoIPSmsServerConsole.cs
         private static void ConfigureServices(IServiceCollection services)
         {
             services
-                .Configure<GoIPSmsServerOptions>(option => {
+                .Configure<GoIpSmsServerOptions>(option => {
                     option.AuthPassword = "malacka";
                     option.Port = 44444;
                     option.ServerId = "lacika";
@@ -128,11 +128,11 @@ namespace GoIPSmsServerConsole.cs
                 .AddLogging(configure => configure
                     .AddConsole()
                     .AddDebug()
-                    .AddFilter("Voxo.GoIpSmsServer.GoIPSmsServer", LogLevel.Information)
+                    .AddFilter("Voxo.GoIpSmsServer.GoIpSmsServer", LogLevel.Information)
                     .AddFilter("Microsoft", LogLevel.Debug)
                     .AddFilter("System", LogLevel.Debug)
                 )
-                .AddSingleton<GoIPSmsServer>()
+                .AddSingleton<GoIpSmsServer>()
                 .AddTransient<GoIpSmsClient>();
         }
     }

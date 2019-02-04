@@ -4,9 +4,9 @@ using System.Text;
 
 namespace Voxo.GoIpSmsServer
 {
-    public class GoIPSendMessageEventArgs : EventArgs
+    public class GoIpSendMessageEventArgs : EventArgs
     {
-        public GoIPSendMessageEventArgs(string phoneNumber, string sendID, string status)
+        public GoIpSendMessageEventArgs(string phoneNumber, string sendID, string status)
         {
             PhoneNumber = phoneNumber;
             SendId = sendID;

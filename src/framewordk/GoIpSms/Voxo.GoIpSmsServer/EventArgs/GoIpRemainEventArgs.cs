@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Text;
 
 namespace Voxo.GoIpSmsServer
 {
-    public class GoIPDeliveryReportEventArgs : EventArgs
+    public class GoIpRemainEventArgs : EventArgs
     {
-        public GoIPDeliveryReportEventArgs(string message, GoIPSmsDeliveryReportPacket packet, string host, int port)
+        public GoIpRemainEventArgs(string message, GoIpRemainPacket packet, string host, int port)
         {
             Message = message;
             Packet = packet;
@@ -13,7 +15,7 @@ namespace Voxo.GoIpSmsServer
         }
 
         public string Message { get; }
-        public GoIPSmsDeliveryReportPacket Packet { get; }
+        public GoIpRemainPacket Packet { get; }
         public string Host { get; }
         public int Port { get; }
     }

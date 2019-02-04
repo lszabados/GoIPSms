@@ -4,9 +4,9 @@ using System.Text;
 
 namespace Voxo.GoIpSmsServer
 {
-    public class GoIPRegisterEventArgs : EventArgs
+    public class GoIpRegisterEventArgs : EventArgs
     {
-        public GoIPRegisterEventArgs(string message, GoIPRegistrationPacket packet, string host, int port, int status)
+        public GoIpRegisterEventArgs(string message, GoIpRegistrationPacket packet, string host, int port, int status)
         {
             Packet = packet;
             Host = host;
@@ -16,7 +16,7 @@ namespace Voxo.GoIpSmsServer
         }
 
         public string Message { get; }
-        public GoIPRegistrationPacket Packet { get; }
+        public GoIpRegistrationPacket Packet { get; }
         public string Host { get; }
         public int Port { get; }
         public int Status { get; }

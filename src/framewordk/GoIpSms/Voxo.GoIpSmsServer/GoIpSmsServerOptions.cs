@@ -1,9 +1,9 @@
 ﻿namespace Voxo.GoIpSmsServer
 {
     /// <summary>
-    /// GoIPSmsServer initialization options
+    /// GoIpSmsServer initialization options
     /// </summary>
-    public class GoIPSmsServerOptions
+    public class GoIpSmsServerOptions
     {
         public int Port { get; set; } = 44444;
         public string ServerId { get; set; }

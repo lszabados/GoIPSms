@@ -5,12 +5,12 @@ using System.Text;
 namespace Voxo.GoIpSmsServer
 {
     /// <summary>
-    /// GoIP device Registration packet
+    /// GoIp device Registration packet
     /// </summary>
-    public class GoIPRegistrationPacket : GoIPPacketBase
+    public class GoIpRegistrationPacket : GoIpPacketBase
     {
 
-        public GoIPRegistrationPacket(string data):base(data)
+        public GoIpRegistrationPacket(string data):base(data)
         {
 
         }

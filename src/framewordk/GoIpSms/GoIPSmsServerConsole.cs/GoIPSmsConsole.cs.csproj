@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Voxo.GoIpSmsServer\Voxo.GoIpSmsServer.csproj" />
+    <ProjectReference Include="..\Voxo.GoIpSmsServer\Voxo.GoIpSms.csproj" />
   </ItemGroup>
 
 </Project>
