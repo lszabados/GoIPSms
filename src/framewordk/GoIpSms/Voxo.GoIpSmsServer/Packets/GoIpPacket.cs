@@ -11,6 +11,7 @@ namespace Voxo.GoIpSms
         public GoIpPacket(string data, string PacketId) : base(data)
         {
             packetId = PacketId;
+            ExtractData(data.Split(new char[] { ';' }));
         }
 
         public int receiveid { get; protected set; }

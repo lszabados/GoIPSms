@@ -12,7 +12,7 @@ namespace Voxo.GoIpSms
 
         public GoIpRegistrationPacket(string data):base(data)
         {
-
+            ExtractData(data.Split(new char[] { ';' }));
         }
 
         public long req { get; protected set; }
