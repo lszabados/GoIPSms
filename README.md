@@ -10,8 +10,8 @@ This project is in very early preview stage and it's not suggested to use it in 
 
 ## Documentation
 
-  [GoIPSmsServer](GoIPSmsServer.md)
-  [GoIPSmsClinet](GoIPSmsClient.md)
+  [GoIPSmsServer](/docs/en/GoIPSmsServer.md)
+  [GoIPSmsClinet](/docs/en/GoIPSmsClient.md)
 
 ## Server Features
 

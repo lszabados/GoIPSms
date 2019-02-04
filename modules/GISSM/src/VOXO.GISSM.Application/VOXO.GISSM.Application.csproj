@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\..\common.props" />
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace />
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Volo.Abp.AutoMapper" Version="0.13.0" />
+    <ProjectReference Include="..\VOXO.GISSM.Application.Contracts\VOXO.GISSM.Application.Contracts.csproj" />
+    <ProjectReference Include="..\VOXO.GISSM.Domain\VOXO.GISSM.Domain.csproj" />
+  </ItemGroup>
+
+</Project>
