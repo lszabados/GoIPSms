@@ -54,6 +54,10 @@ namespace Voxo.GoIpSms
         public delegate void RemainHandler(object server, GoIpRemainEventArgs messageData);
         public event RemainHandler OnRemain;
 
+        // HANGUP event
+        public delegate void HangupHandler(object server, GoIpHangupEventArgs messageData);
+        public event HangupHandler OnHangup;
+
         // Cell list event
         public delegate void CellListHandler(object server, GoIpCellListEvenetArgs messageData);
         public event CellListHandler OnCellListChanged;
@@ -280,6 +284,12 @@ namespace Voxo.GoIpSms
                 extracted = true;
             }
 
+            if (Data.StartsWith("HANGUP:"))
+            {
+                HangupData(Data, host, port);
+                extracted = true;
+            }
+
             if (Data.StartsWith("CELLS:"))
             {
                 CellList(Data, host, port);
@@ -290,6 +300,30 @@ namespace Voxo.GoIpSms
             {
                 _logger.LogInformation("Unknown data, not extracted. Data {0}", Data);
             }
+        }
+
+        private void HangupData(string data, string host, int port)
+        {
+            _logger.LogDebug("Start GoIp Hangup event");
+
+            GoIpHangupPacket packet = new GoIpHangupPacket(data);
+
+            // if auth error  
+            if (packet.authid != _options.AuthId || packet.password != _options.AuthPassword)
+            {
+                // TODO: log?
+                _logger.LogInformation("GoIp Hangup event authentication error. Data: {0}", data);
+                Send(ACKPacketFactory.ACK("HANGUP", packet.receiveid.ToString(), "Hangup event authentication error!"), host, port);
+                OnHangup?.Invoke(this, new GoIpHangupEventArgs("GoIp Hangup event authentication error!", packet, host, port));
+                return;
+            }
+
+            packet.password = "";  // Delete password for security reasons
+
+            _logger.LogInformation("Received GoIp Hangup event. ReceiveId: {0} Number: {1} Cause: {2}", packet.receiveid, packet.num, packet.cause);
+
+            Send(ACKPacketFactory.ACK("REMAIN", packet.receiveid.ToString(), ""), host, port);
+            OnHangup?.Invoke(this, new GoIpHangupEventArgs("OK", packet, host, port));
         }
 
         private void CellList(string data, string host, int port)

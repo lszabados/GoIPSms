@@ -14,13 +14,15 @@ namespace Voxo.GoIpSms
         }
 
 
-        public string gsm_remain_time { get; protected set; }
+        public string num { get; protected set; }
+        public string cause { get; protected set; }
 
 
         public override void ExtractData(string[] dlist)
         {
             base.ExtractData(dlist);
-            gsm_remain_time = FindStringValue("gsm_remain_time", dlist);
+            num = FindStringValue("num", dlist);
+            cause = FindStringValue("cause", dlist);
         }
 
     }

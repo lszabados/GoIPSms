@@ -11,7 +11,7 @@ services
 	.Configure<GoIPSmsServerOptions>(option => {
 		option.AuthPassword = "XXXXXX";
 		option.Port = 44444;
-		option.ServerId = "XXXX";
+		option.AuthId = "XXXX";
 	})
 	.AddLogging(configure => configure
 				.AddConsole()
@@ -33,7 +33,7 @@ Direct create
 
 ````c#
 var server = new GoIPSmsServer(new GoIPSmsServerOptions()
-				{ AuthPassword = "hhh", Port = 44444, ServerId = "lkljkl" }, 
+				{ AuthPassword = "hhh", Port = 44444, AuthId = "lkljkl" }, 
 				new NullLogger<GoIPSmsServer>());
 ````
 
@@ -67,5 +67,7 @@ Raise `OnDeliveryReport` when receive DELIVER data stream from GoIP device. If c
 Raise `OnRecord` when receive RECORD data stream from GoIP device. When Goip in a call, goip send status of call to server
 
 Raise `OnRemain` when receive REMAIN data from GoIP device. After each call ,goip send remain time to server
+
+Raise `OnHangup` when receive HANGUP data from GoIP device. Not documented event!!!
 
 Raise `OnCellListChanged` when receive changed cell list from GoIP device.

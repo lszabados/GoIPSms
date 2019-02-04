@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using System;
 using System.Threading.Tasks;
-using Voxo.GoIpSmsServer;
+using Voxo.GoIpSms;
 
 namespace GoIpSmsServerConsole.cs
 {
@@ -123,7 +123,7 @@ namespace GoIpSmsServerConsole.cs
                 .Configure<GoIpSmsServerOptions>(option => {
                     option.AuthPassword = "malacka";
                     option.Port = 44444;
-                    option.ServerId = "lacika";
+                    option.AuthId = "lacika";
                 })
                 .AddLogging(configure => configure
                     .AddConsole()
