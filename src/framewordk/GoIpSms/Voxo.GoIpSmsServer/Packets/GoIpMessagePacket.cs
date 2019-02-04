@@ -9,7 +9,7 @@ namespace Voxo.GoIpSmsServer
     /// </summary>
     public class GoIpMessagePacket : GoIpPacket
     {
-        public GoIpMessagePacket(string data) : base(data)
+        public GoIpMessagePacket(string data) : base(data, "RECEIVE")
         {
 
         }

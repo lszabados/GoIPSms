@@ -6,7 +6,7 @@ namespace Voxo.GoIpSmsServer
 {
     public class GoIpRemainPacket : GoIpPacket
     {
-        public GoIpRemainPacket(string data) : base(data)
+        public GoIpRemainPacket(string data) : base(data,"REMAIN")
         {
 
         }

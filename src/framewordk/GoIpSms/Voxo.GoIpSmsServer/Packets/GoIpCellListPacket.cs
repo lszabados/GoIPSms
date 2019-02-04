@@ -6,7 +6,7 @@ namespace Voxo.GoIpSmsServer
 {
     class GoIpCellListPacket : GoIpPacket
     {
-        public GoIpCellListPacket(string data) : base(data)
+        public GoIpCellListPacket(string data) : base(data, "CELLS")
         {
 
         }

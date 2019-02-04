@@ -8,7 +8,7 @@ namespace Voxo.GoIpSmsServer
 
     public class GoIpRecordPacket : GoIpPacket
     {
-        public GoIpRecordPacket(string data) : base(data)
+        public GoIpRecordPacket(string data) : base(data, "RECORD")
         {
 
         }

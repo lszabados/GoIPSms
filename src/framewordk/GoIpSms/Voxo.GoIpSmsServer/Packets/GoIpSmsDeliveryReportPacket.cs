@@ -6,7 +6,7 @@ namespace Voxo.GoIpSmsServer
 {
     public class GoIpSmsDeliveryReportPacket : GoIpPacket
     {
-        public GoIpSmsDeliveryReportPacket(string data) : base(data)
+        public GoIpSmsDeliveryReportPacket(string data) : base(data,"DELIVER")
         {
 
         }

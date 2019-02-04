@@ -128,7 +128,7 @@ namespace GoIpSmsServerConsole.cs
                 .AddLogging(configure => configure
                     .AddConsole()
                     .AddDebug()
-                    .AddFilter("Voxo.GoIpSmsServer.GoIpSmsServer", LogLevel.Information)
+                    .AddFilter("Voxo.GoIpSmsServer.GoIpSmsServer", LogLevel.Debug)
                     .AddFilter("Microsoft", LogLevel.Debug)
                     .AddFilter("System", LogLevel.Debug)
                 )

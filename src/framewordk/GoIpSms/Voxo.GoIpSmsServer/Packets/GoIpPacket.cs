@@ -6,10 +6,11 @@ namespace Voxo.GoIpSmsServer
 {
     public class GoIpPacket : GoIpPacketBase
     {
-        public GoIpPacket(string data) : base(data)
+        private readonly string packetId;
+
+        public GoIpPacket(string data, string PacketId) : base(data)
         {
-
-
+            packetId = PacketId;
         }
 
         public int receiveid { get; protected set; }
@@ -18,7 +19,7 @@ namespace Voxo.GoIpSmsServer
 
         public override void ExtractData(string[] dlist)
         {
-            receiveid = FindIntValue("CELLS", dlist);
+            receiveid = FindIntValue(packetId, dlist);
             authid = FindStringValue("id", dlist);
             password = FindStringValue("password", dlist);
         }
